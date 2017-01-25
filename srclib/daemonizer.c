@@ -1,16 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <syslog.h>
 #include <unistd.h>
+
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #define EXIT_SUCCESS 0
-#define EIXT_FAILURE 1
+#define EIXT_FAILURE -1
 
-int daemonizer(){
+int daemonizar(char *service){
 	pid_t daemonpid = -1;
 	pid_t sid=-1;
 	
+	if(!service){
+		perror("Invalid input\n");
+		exit(EXIT_FAILURE);
+	}
 	daemonpid=fork();
 	if(daemonpid<0){
 		perror("Could not launch daemon\n");
@@ -39,8 +45,16 @@ int daemonizer(){
 	close(STDOUT_FILENO);
 
 	/*Main function*/
+	
+	/*LOG_PID -> prints PID with every message
+	  LOG_USER -> default value*/
+	openlog("Daemonlog",LOG_PID ,LOG_USER);
+	//syslog(LOG_INFO,"Todo bien...");
+	closelog();
 
 	/***************/
+	
+	
 	exit(EXIT_SUCCESS);
 	
 }
