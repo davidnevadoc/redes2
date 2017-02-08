@@ -1,5 +1,6 @@
-#include <../include/holamundo.h>
-void main(void){
+#include "../include/holamundo.h"
+int main(void){
 	holamundo();
+	return 0;
 }
 
