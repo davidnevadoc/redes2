@@ -6,6 +6,14 @@
 /* Servidor TCP de echo muy basico,                */
 /* Solo funciona con direcciones IPv4              */
 /***************************************************/
+
+volatile int stop=0;
+
+void manejador_SIGINT(int sig){
+	stop=1;
+
+}
+
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
 	struct sockaddr cli;
@@ -17,7 +25,11 @@ int main(int argc, char *argv[]){
 
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
-
+	/*Armar manejador de sennal*/
+	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
+		perror("Error en la captura de SIGINT");
+		exit(EXIT_FAILURE);
+	}
 	/*Comprobacion de parametros*/
 	if(argc<2){
 		port = 0;
@@ -28,12 +40,11 @@ int main(int argc, char *argv[]){
 		printf("Entrada invalida."
 			"Especifique puerto de escucha\n");
 		exit(EXIT_FAILURE);	
-	}	
+	}
 	if(port<1024 && port > 0){
 		printf("%d Puerto no valido\n", port);
 		exit(EXIT_FAILURE);
 	}
-	openlog(NULL, LOG_CONS, LOG_USER);
 	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
 		syslog(LOG_ERR, "Error en sockfd()");
 		exit(FAILURE);
@@ -66,19 +77,19 @@ int main(int argc, char *argv[]){
 	/*bucle principal, a la espera conexiones*/
 	printf("A la espera de mensajes, escuchando puerto %d\n",
 		ntohs(serv.sin_port));
-	while(1){
+	while(!stop){
 		clilen= sizeof(cli);
 		if( (connfd=accept(sockfd, &cli, &clilen)) == -1){
 			syslog(LOG_ERR,"Error en accept(): %s",
 			 strerror(errno));
 		}
 		/*bucle de espra de mensajes*/
-		while (1){
-			if ( (nlines=recv(sockfd, buff, BUFF_SIZE, 0)) == -1){
+		while (!stop){
+			if ( (nlines=recv(connfd, buff, BUFF_SIZE, 0)) == -1){
 				syslog(LOG_ERR, "Error en recv(): %s",
 				strerror(errno));
 			}
-			if ( send(sockfd, buff, nlines,0)== -1){
+			if ( send(connfd, buff, nlines,0)== -1){
 				syslog(LOG_ERR, "Error en send(): %s",
 				strerror(errno));
 			}
@@ -87,7 +98,10 @@ int main(int argc, char *argv[]){
 	}
 
 	close(sockfd);
+	printf("Servidor cerrado\n");
 	exit(SUCCESS);
 
 }
+
+
 
