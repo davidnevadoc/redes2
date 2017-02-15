@@ -83,7 +83,7 @@ int main(int argc, char *argv[]){
 				strerror(errno));
 			}
 		}
-		close(connfd);
+		//close(connfd);
 	}
 
 	close(sockfd);
