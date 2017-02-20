@@ -11,12 +11,13 @@
 #include <unistd.h> 
 #include <errno.h> 
 #include <signal.h>
-
+#include <pthread.h>
 
 #define SUCCESS 0
 #define FAILURE -1
 #define MAX_QUEUE 10
 #define BUFF_SIZE 500
+#define MAXHILOS 100
 
 
 #endif

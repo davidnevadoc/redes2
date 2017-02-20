@@ -9,30 +9,37 @@
 
 volatile int stop=0;
 
+typedef struct _data{
+	int csocket;
+
+} data;
+/*
 void manejador_SIGINT(int sig){
 	stop=1;
-
 }
+*/
+void * atiendecliente(data * d);
 
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
 	struct sockaddr cli;
-	int sockfd =-1, connfd =-1;
-	ssize_t nlines=0;
-	char buff[BUFF_SIZE];
+	int sockfd =-1, connfd =-1, chilo=0;
 	uint16_t port =0;
 	socklen_t clilen = 0;
+	data aux;
+	pthread_t hilo[MAXHILOS];
 
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
-	/*Armar manejador de sennal*/
+	/*Armar manejador de sennal*//*
 	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
 		perror("Error en la captura de SIGINT");
 		exit(EXIT_FAILURE);
 	}
+	*/
 	/*Comprobacion de parametros*/
 	if(argc<2){
-		port = 0;
+		port = 55000;
 		printf("Se asignarar un puerto automaticamente\n");
 	} else if (argc == 2 ) {
 		port= (uint16_t) atoi(argv[1]) ;
@@ -41,7 +48,7 @@ int main(int argc, char *argv[]){
 			"Especifique puerto de escucha\n");
 		exit(EXIT_FAILURE);	
 	}
-	if(port<1024 && port > 0){
+	if(port<1024){
 		printf("%d Puerto no valido\n", port);
 		exit(EXIT_FAILURE);
 	}
@@ -58,8 +65,8 @@ int main(int argc, char *argv[]){
 	
 	if ( bind(sockfd, (struct sockaddr * ) &serv,
 		 sizeof(serv) ) == -1){
-		syslog(LOG_ERR, "Error en bind(): %s",
-		 strerror(errno));
+		syslog(LOG_ERR, "Error en bind(): %d",
+		 errno);
 		exit(FAILURE);
 	}
 
@@ -68,8 +75,8 @@ int main(int argc, char *argv[]){
 	 tamnio de la cola y ajustarla en funcion de las necesidades
 	 del servidor. De momento macro definida en tcpechoserver.h */
 	if ( listen(sockfd, MAX_QUEUE) == -1 ) {
-		syslog(LOG_ERR, "Error en listen(): %s",
-		 strerror(errno));
+		syslog(LOG_ERR, "Error en listen(): %d",
+		 errno);
 		exit(FAILURE);
 	}
 	syslog(LOG_INFO, "Socket a la scucha");
@@ -80,21 +87,13 @@ int main(int argc, char *argv[]){
 	while(!stop){
 		clilen= sizeof(cli);
 		if( (connfd=accept(sockfd, &cli, &clilen)) == -1){
-			syslog(LOG_ERR,"Error en accept(): %s",
-			 strerror(errno));
+			syslog(LOG_ERR,"Error en accept(): %d",
+			 errno);
 		}
-		/*bucle de espra de mensajes*/
-		while (!stop){
-			if ( (nlines=recv(connfd, buff, BUFF_SIZE, 0)) == -1){
-				syslog(LOG_ERR, "Error en recv(): %s",
-				strerror(errno));
-			}
-			if ( send(connfd, buff, nlines,0)== -1){
-				syslog(LOG_ERR, "Error en send(): %s",
-				strerror(errno));
-			}
-		}
-		close(connfd);
+		/*Lanzamos hilo que atiende al cliente*/
+		aux.csocket=connfd;
+		pthread_create(&(hilo[chilo]),NULL,  (void * (*)(void *)) atiendecliente, &aux);
+		chilo++;
 	}
 
 	close(sockfd);
@@ -102,6 +101,26 @@ int main(int argc, char *argv[]){
 	exit(SUCCESS);
 
 }
+
+/* Funcion principal del servidor,
+en este caso un servicio de echo*/ 
+void * atiendecliente(data * d){
+	ssize_t nlines=0;
+	char buff[BUFF_SIZE];
+	while (!stop){
+		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
+			syslog(LOG_ERR, "Error en recv(): %d",
+			errno);
+		}
+		if ( send(d->csocket, buff, nlines,0)== -1){
+			syslog(LOG_ERR, "Error en send(): %d",
+			errno);
+		}
+	}
+	close(d->csocket);
+	pthread_exit(NULL);
+}
+
 
 
 

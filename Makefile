@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS= -Wall -pedantic
+FLAGS= -Wall -pedantic -pthread
 UDPECHO=ueserv
 TCPECHO=teserv
 
