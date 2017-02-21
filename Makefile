@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS= -Wall -pedantic -pthread
+FLAGS= -std=c11 -Wall -pedantic -pthread
 UDPECHO=ueserv
 TCPECHO=teserv
 
@@ -28,6 +28,11 @@ OBJS= $(UEOBJS) $(TEOBJS)
 
 
 all: $(UDPECHO) $(TCPECHO)
+	@echo "#--------------------------"
+	@echo " Redes 2"
+	@echo " David Nevado"
+	@echo " Maria Prieto"
+	@echo "#--------------------------"
 
 $(UDPECHO): $(UEOBJS)
 	$(CC) $(FLAGS) -o $@ $(UEOBJS)
