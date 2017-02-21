@@ -30,6 +30,7 @@ OBJS= $(UEOBJS) $(TEOBJS)
 all: $(UDPECHO) $(TCPECHO)
 	@echo "#--------------------------"
 	@echo " Redes 2"
+	@echo " Pareja 05"
 	@echo " David Nevado"
 	@echo " Maria Prieto"
 	@echo "#--------------------------"
