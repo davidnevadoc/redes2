@@ -79,7 +79,7 @@ int main(int argc, char *argv[]){
 		 errno);
 		exit(FAILURE);
 	}
-	syslog(LOG_INFO, "Socket a la escucha");
+	syslog(LOG_INFO, "Socket a la scucha");
 	
 	/*bucle principal, a la espera conexiones*/
 	printf("A la espera de mensajes, escuchando puerto %d\n",

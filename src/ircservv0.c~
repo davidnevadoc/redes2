@@ -1,12 +1,5 @@
-#include "../include/tcpechoserver.h"
 
-
-
-/***************************************************/
-/* Servidor TCP de echo muy basico,                */
-/* Solo funciona con direcciones IPv4              */
-/***************************************************/
-
+#include "../include/ircserv.h"
 volatile int stop=0;
 
 typedef struct _data{
@@ -27,6 +20,7 @@ int main(int argc, char *argv[]){
 	uint16_t port =0;
 	socklen_t clilen = 0;
 	data aux;
+	//TODO Implementar control sobre los hilos
 	pthread_t hilo[MAXHILOS];
 
 	bzero(&serv, sizeof(serv));
@@ -40,7 +34,7 @@ int main(int argc, char *argv[]){
 	/*Comprobacion de parametros*/
 	if(argc<2){
 		port = 55000;
-		printf("Se asignarar un puerto automaticamente\n");
+		printf("Se asigna el puerto 55000\n");
 	} else if (argc == 2 ) {
 		port= (uint16_t) atoi(argv[1]) ;
 	} else {
@@ -57,7 +51,7 @@ int main(int argc, char *argv[]){
 		exit(FAILURE);
 	} 
 	
-	/*rellenar estructu ra de serv*/
+	/*rellenar estructura de serv*/
 	serv.sin_family=AF_INET;
 	serv.sin_addr.s_addr=htonl(INADDR_ANY);
 	serv.sin_port=htons(port);
@@ -102,6 +96,7 @@ int main(int argc, char *argv[]){
 
 }
 
+
 /* Funcion principal del servidor,
 en este caso un servicio de echo*/ 
 void * atiendecliente(data * d){
@@ -120,7 +115,4 @@ void * atiendecliente(data * d){
 	close(d->csocket);
 	pthread_exit(NULL);
 }
-
-
-
 
