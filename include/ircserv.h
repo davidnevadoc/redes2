@@ -1,3 +1,12 @@
+
+/**
+ * Cabecera del fichero principal del servidor IRC
+ * @brief Biblioteca de semaforos
+ * @file ircserv.h
+ * @author Maria Prieto
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 12/02/2017
+ */
 #ifndef IRCSERV_H
 #define IRCSERV_H
 
@@ -18,6 +27,8 @@
 #define MAX_QUEUE 10
 #define BUFF_SIZE 500
 
+
+void * atiende_cliente(data * d);
 
 
 #endif

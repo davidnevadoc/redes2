@@ -1,8 +1,23 @@
+
+/**
+ * Version 0 del sevidor IRC
+ *
+ * @brief Servidor IRC v0.0
+ * @author Maria Prieto
+ * @author David Nevado Catalan
+ * @file ircservv0.c
+ * @date 12/02/2017
+ */
+
 #include <redes2/irc.h>
 #include "../include/ircserv.h"
 volatile int stop=0;
 
+/**
+ * @brief Estructura para el paso de parametros a la funcion de los hilos
+ */
 typedef struct _data{
+	/** Socket de la conexion que atiende el hilo */
 	int csocket;
 
 } data;
@@ -11,7 +26,7 @@ void manejador_SIGINT(int sig){
 	stop=1;
 }
 */
-void * atiendecliente(data * d);
+
 
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
@@ -86,7 +101,7 @@ int main(int argc, char *argv[]){
 		    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
 			tdata_aux->csocket=connfd;
 			if (pthread_create(taux,NULL,
-			  (void * (*)(void *)) atiendecliente, tdata_aux) !=0){
+			  (void * (*)(void *)) atiende_cliente, tdata_aux) !=0){
 				syslog(LOG_ERR, "Error en pthread_create");
 			}
 			/*Igualamos tdata_aux a null , a partir de ahora solo 
@@ -107,9 +122,14 @@ int main(int argc, char *argv[]){
 }
 
 
-/* Funcion principal del servidor,
-en este caso un servicio de echo*/ 
-void * atiendecliente(data * d){
+/**
+ * Funcion ejecutada por cada hilo que atiende una conexion.
+ * Define el servicio basico del sevidor
+ *
+ * @brief Funcion que atiende cada conexion 
+ * @param d Estructura de datos data
+ */
+void * atiende_cliente(data * d){
 	ssize_t nlines=0;
 	char buff[BUFF_SIZE];
 	while (!stop){
