@@ -26,8 +26,9 @@ int main(int argc, char *argv[]){
 	int sockfd =-1, connfd =-1, chilo=0;
 	uint16_t port =0;
 	socklen_t clilen = 0;
-	data aux;
-	pthread_t hilo[MAXHILOS];
+	data *tdata_aux = NULL;
+	//TODO Implementar control sobre los hilos
+	pthread_t * taux= NULL;
 
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]){
 	/*Comprobacion de parametros*/
 	if(argc<2){
 		port = 55000;
-		printf("Se asignarar un puerto automaticamente\n");
+		printf("Se asigna el puerto 55000\n");
 	} else if (argc == 2 ) {
 		port= (uint16_t) atoi(argv[1]) ;
 	} else {
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]){
 		exit(FAILURE);
 	} 
 	
-	/*rellenar estructu ra de serv*/
+	/*rellenar estructura de serv*/
 	serv.sin_family=AF_INET;
 	serv.sin_addr.s_addr=htonl(INADDR_ANY);
 	serv.sin_port=htons(port);
@@ -71,9 +72,6 @@ int main(int argc, char *argv[]){
 	}
 
 	/*Conexion */
-	/*TODO Wrapper a la funcion listen para poder modificar el
-	 tamnio de la cola y ajustarla en funcion de las necesidades
-	 del servidor. De momento macro definida en tcpechoserver.h */
 	if ( listen(sockfd, MAX_QUEUE) == -1 ) {
 		syslog(LOG_ERR, "Error en listen(): %d",
 		 errno);
@@ -91,9 +89,22 @@ int main(int argc, char *argv[]){
 			 errno);
 		}
 		/*Lanzamos hilo que atiende al cliente*/
-		aux.csocket=connfd;
-		pthread_create(&(hilo[chilo]),NULL,  (void * (*)(void *)) atiendecliente, &aux);
-		chilo++;
+		if ((tdata_aux = malloc(sizeof(data))) != NULL &&
+		    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
+			tdata_aux->csocket=connfd;
+			if (pthread_create(taux,NULL,
+			  (void * (*)(void *)) atiendecliente, tdata_aux) !=0){
+				syslog(LOG_ERR, "Error en pthread_create");
+			}
+			/*Igualamos tdata_aux a null , a partir de ahora solo 
+			se gestiona desde el hilo*/		
+			tdata_aux=NULL;
+			chilo++;
+		} else {
+			syslog(LOG_ERR, "Error en malloc(): No se pudo reservar memoria"
+				" para la estructura del hilo");
+		}
+		
 	}
 
 	close(sockfd);
@@ -101,6 +112,7 @@ int main(int argc, char *argv[]){
 	exit(SUCCESS);
 
 }
+
 
 /* Funcion principal del servidor,
 en este caso un servicio de echo*/ 
@@ -117,10 +129,9 @@ void * atiendecliente(data * d){
 			errno);
 		}
 	}
+
 	close(d->csocket);
+	free(d);
 	pthread_exit(NULL);
 }
-
-
-
 

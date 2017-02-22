@@ -17,7 +17,7 @@
 #define FAILURE -1
 #define MAX_QUEUE 10
 #define BUFF_SIZE 500
-#define MAXHILOS 100
+
 
 
 #endif

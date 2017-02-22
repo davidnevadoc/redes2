@@ -2,12 +2,13 @@ CC=gcc
 FLAGS= -std=c11 -Wall -pedantic -pthread
 UDPECHO=ueserv
 TCPECHO=teserv
+IRC=ircserv
 
 SDIR=src
 ODIR=obj
 DDIR=inlude
 
-_DEPS= udpechoserver.h tcpechoserver.h
+_DEPS = udpechoserver.h tcpechoserver.h ircservv0.h
 DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
 
 #UDP echo server 
@@ -24,10 +25,17 @@ TESOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 _TEOBJS = $(patsubst %.c, %.o, $(_TESOURCES))
 TEOBJS = $(patsubst %,$(ODIR)/%,$(_TEOBJS))
 
-OBJS= $(UEOBJS) $(TEOBJS)
+#IRC server
+_IRCSOURCES = ircservv0.c
+IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+
+_IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))
+IRCOBJS = $(patsubst %,$(ODIR)/%,$(_IRCOBJS))
+
+OBJS= $(UEOBJS) $(TEOBJS) $(IRCOBJS)
 
 
-all: $(UDPECHO) $(TCPECHO)
+all: $(IRC)
 	@echo "#--------------------------"
 	@echo " Redes 2"
 	@echo " Pareja 05"
@@ -41,10 +49,14 @@ $(UDPECHO): $(UEOBJS)
 $(TCPECHO): $(TEOBJS)
 	$(CC) $(FLAGS) -o $@ $(TEOBJS)
 
-$(OBJS) : $(ODIR)/%.o: $(SDIR)/%.c 
+$(IRC): $(IRCOBJS)
+	$(CC) $(FLAGS) -o $@ $(IRCOBJS)
+
+$(OBJS): $(ODIR)/%.o: $(SDIR)/%.c 
 	$(CC) $(FLAGS) -c -c -o $@ $<
 
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) 
+	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) 
+

@@ -19,9 +19,9 @@ int main(int argc, char *argv[]){
 	int sockfd =-1, connfd =-1, chilo=0;
 	uint16_t port =0;
 	socklen_t clilen = 0;
-	data aux;
+	data *tdata_aux = NULL;
 	//TODO Implementar control sobre los hilos
-	pthread_t hilo[MAXHILOS];
+	pthread_t * taux= NULL;
 
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
@@ -65,9 +65,6 @@ int main(int argc, char *argv[]){
 	}
 
 	/*Conexion */
-	/*TODO Wrapper a la funcion listen para poder modificar el
-	 tamnio de la cola y ajustarla en funcion de las necesidades
-	 del servidor. De momento macro definida en tcpechoserver.h */
 	if ( listen(sockfd, MAX_QUEUE) == -1 ) {
 		syslog(LOG_ERR, "Error en listen(): %d",
 		 errno);
@@ -85,9 +82,22 @@ int main(int argc, char *argv[]){
 			 errno);
 		}
 		/*Lanzamos hilo que atiende al cliente*/
-		aux.csocket=connfd;
-		pthread_create(&(hilo[chilo]),NULL,  (void * (*)(void *)) atiendecliente, &aux);
-		chilo++;
+		if ((tdata_aux = malloc(sizeof(data))) != NULL &&
+		    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
+			tdata_aux->csocket=connfd;
+			if (pthread_create(taux,NULL,
+			  (void * (*)(void *)) atiendecliente, tdata_aux) !=0){
+				syslog(LOG_ERR, "Error en pthread_create");
+			}
+			/*Igualamos tdata_aux a null , a partir de ahora solo 
+			se gestiona desde el hilo*/		
+			tdata_aux=NULL;
+			chilo++;
+		} else {
+			syslog(LOG_ERR, "Error en malloc(): No se pudo reservar memoria"
+				" para la estructura del hilo");
+		}
+		
 	}
 
 	close(sockfd);
@@ -100,13 +110,21 @@ int main(int argc, char *argv[]){
 /* Funcion principal del servidor,
 en este caso un servicio de echo*/ 
 void * atiendecliente(data * d){
-	
-	
+	ssize_t nlines=0;
+	char buff[BUFF_SIZE];
 	while (!stop){
-		
+		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
+			syslog(LOG_ERR, "Error en recv(): %d",
+			errno);
+		}
+		if ( send(d->csocket, buff, nlines,0)== -1){
+			syslog(LOG_ERR, "Error en send(): %d",
+			errno);
+		}
 	}
 
 	close(d->csocket);
+	free(d);
 	pthread_exit(NULL);
 }
 
