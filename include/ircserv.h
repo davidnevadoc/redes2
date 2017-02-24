@@ -28,7 +28,5 @@
 #define BUFF_SIZE 500
 
 
-void * atiende_cliente(data * d);
-
 
 #endif

@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS= -std=c11 -Wall -pedantic -pthread
+FLAGS= -std=c11 -Wall -pedantic -pthread -lircredes
 UDPECHO=ueserv
 TCPECHO=teserv
 IRC=ircserv
@@ -53,7 +53,7 @@ $(IRC): $(IRCOBJS)
 	$(CC) $(FLAGS) -o $@ $(IRCOBJS)
 
 $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c 
-	$(CC) $(FLAGS) -c -c -o $@ $<
+	$(CC) $(FLAGS) -c -o $@ $<
 
 
 .PHONY: clean

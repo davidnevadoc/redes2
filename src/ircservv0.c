@@ -8,7 +8,7 @@
  * @file ircservv0.c
  * @date 12/02/2017
  */
-
+gedit
 #include <redes2/irc.h>
 #include "../include/ircserv.h"
 volatile int stop=0;
@@ -26,7 +26,7 @@ void manejador_SIGINT(int sig){
 	stop=1;
 }
 */
-
+void * atiende_cliente(data * d);
 
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
@@ -130,13 +130,20 @@ int main(int argc, char *argv[]){
  * @param d Estructura de datos data
  */
 void * atiende_cliente(data * d){
+	/*Numero de lineas recividas por el socket*/
 	ssize_t nlines=0;
+	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
+	/*Comando recibido*/
+	long command =0 ;
 	while (!stop){
+
 		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "Error en recv(): %d",
 			errno);
 		}
+		command = IRC_CommandQuery(buff);
+		sprintf(buff, "Comando: %ld", command);	
 		if ( send(d->csocket, buff, nlines,0)== -1){
 			syslog(LOG_ERR, "Error en send(): %d",
 			errno);
