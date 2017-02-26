@@ -8,7 +8,6 @@
  * @file ircservv0.c
  * @date 12/02/2017
  */
-gedit
 #include <redes2/irc.h>
 #include "../include/ircserv.h"
 volatile int stop=0;

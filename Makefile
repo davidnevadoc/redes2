@@ -1,5 +1,5 @@
-CC=gcc
-FLAGS= -std=c11 -Wall -pedantic -pthread -lircredes
+CC=gcc 
+FLAGS= -std=c11 -Wall -pedantic -pthread -lircredes -lircinterface -lirctad -lsoundredes
 UDPECHO=ueserv
 TCPECHO=teserv
 IRC=ircserv
