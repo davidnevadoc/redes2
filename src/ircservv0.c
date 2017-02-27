@@ -8,7 +8,7 @@
  * @file ircservv0.c
  * @date 12/02/2017
  */
-#include <redes2/irc.h>
+
 #include "../include/ircserv.h"
 volatile int stop=0;
 
@@ -111,13 +111,10 @@ int main(int argc, char *argv[]){
 			syslog(LOG_ERR, "Error en malloc(): No se pudo reservar memoria"
 				" para la estructura del hilo");
 		}
-		
 	}
-
 	close(sockfd);
 	printf("Servidor cerrado\n");
 	exit(SUCCESS);
-
 }
 
 

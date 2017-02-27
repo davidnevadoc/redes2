@@ -10,6 +10,7 @@
 #ifndef IRCSERV_H
 #define IRCSERV_H
 
+#include <redes2/irc.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>

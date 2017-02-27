@@ -1,5 +1,6 @@
 CC=gcc 
-FLAGS= -std=c11 -Wall -pedantic -pthread -lircredes -lircinterface -lirctad -lsoundredes
+LDFLAGS= -pthread -lircredes -lirctad -lircinterface -lsoundredes
+CFLAGS = -std=c11 -Wall -pedantic
 UDPECHO=ueserv
 TCPECHO=teserv
 IRC=ircserv
@@ -44,16 +45,16 @@ all: $(IRC)
 	@echo "#--------------------------"
 
 $(UDPECHO): $(UEOBJS)
-	$(CC) $(FLAGS) -o $@ $(UEOBJS)
+	$(CC) -o $@ $(UEOBJS) $(CFLAGS) $(LDFLAGS)
 
 $(TCPECHO): $(TEOBJS)
-	$(CC) $(FLAGS) -o $@ $(TEOBJS)
+	$(CC) -o $@ $(TEOBJS) $(CFLAGS) $(LDFLAGS)
 
 $(IRC): $(IRCOBJS)
-	$(CC) $(FLAGS) -o $@ $(IRCOBJS)
+	$(CC) -o $@ $(IRCOBJS) $(CFLAGS) $(LDFLAGS)
 
 $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c 
-	$(CC) $(FLAGS) -c -o $@ $<
+	$(CC) -c -o $@ $< $(CFLAGS) 
 
 
 .PHONY: clean
