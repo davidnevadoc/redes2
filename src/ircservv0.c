@@ -137,32 +137,27 @@ void * atiende_cliente(data * d){
 	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
-	long command = 0 ;
+	long command = 0;
 
  	/*TODO Aqui deberiamos hacer el pipeline*/
 	while (!stop){
-
+		buff[nlines]='\0';
 		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "IRCServ: Error en recv(): %d",
 			errno);
 		}
-
+		
 		command = IRC_CommandQuery(buff);
-		strcpy(d->mensaje, buff);
-		if(command < 0 || command > 6){
+		fprintf(stderr, "%d", command);
+		sprintf(d->mensaje,"%s", buff);
+		if(command < 0 || command > 7){
 			syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
 			command);
-		} else {
-		/*Llamo a la funcion del comando  correspondiente*/
-        	if ((*listaComandos[command - 1])((void *)d) == 1){ /*Ejecuto comando quit*/
-				close(d->csocket);
-				free(d);
-				pthread_exit(NULL);
-			}
-			
+		} else { /*Llamo a la funcion del comando  correspondiente*/
+        	(*listaComandos[command - 1])((void *)d);
 		}
 		/*sprintf(buff, "Comando: %ld \n", command);	
-		
+		 
 		if ( send(d->csocket, buff, nlines,0)== -1){
 			syslog(LOG_ERR, "IRCServ: Error en send(): %d",
 			errno);
@@ -184,10 +179,22 @@ void * atiende_cliente(data * d){
 *@param
 *@return
 */
-
+/*De momento solo muestra la contraseña introducida*/
 int pass(void* info){
 	data *d = (data *) info;
+	long res = 0;
+	char *prefix, *password;
+	char ans[100];
+
 	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	res = IRCParse_Pass (d->mensaje, &prefix, &password);
+	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
+		sprintf(ans, "Parametros insuficientes\n");
+	}else{
+		sprintf(ans, "Has introducido la contrasenna: %s\n", password);
+	}
+
+	send(d->csocket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
 
@@ -200,10 +207,24 @@ int pass(void* info){
 
 int nick(void* info){
 	data *d = (data *) info; 
-	char msg[100];
+	char ans[100];
+	long res = 0;
+	char *msg, *prefix, *nick;
+
 	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
-	sprintf(msg, "Has escrito el comando nick\n");
-	send(d->csocket, msg, sizeof(char)*strlen(msg), 0);
+
+    res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg);
+	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
+		sprintf(msg, "Parametros insuficientes\n");
+	}else{ 
+		if(UTestNick(nick) == TRUE){ //Nick ya existente
+			sprintf(ans, "Nick ya existente\n");
+		}else{ //TODO Hay que ver si es nuevo nick o cambio
+			sprintf(ans, "Has recibido el nick: %s\n", nick);
+		}
+	}
+
+	send(d->csocket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
 
@@ -229,7 +250,6 @@ int user(void* info){
 		/*switch(IRCTADUser_New (user, char *nick, char *realname, char *password, modehost, char *IP, d->csocket)){
 			case
 		}*/
-
 	}
 
 	return 0;
@@ -245,20 +265,21 @@ int quit(void* info){
 	data *d = (data *) info;
 	char *prefix, *msg;
 	long res = 0;
-	char mensaje[1000];
+	char mensaje[100];
 
 	res = IRCParse_Quit (d->mensaje, &prefix, &msg);
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
 		sprintf(mensaje, "Error en el comando QUIT\n");
-		send(d->csocket, mensaje, sizeof(char)*strlen(msg), 0);
-		return 0;
+		send(d->csocket, mensaje, sizeof(char)*strlen(mensaje), 0);
 	}else{ /*Todo ok*/
 		sprintf(mensaje, "Cerrando conexión...\n");
-		send(d->csocket, mensaje, sizeof(char)*strlen(msg), 0);
-		return 1;
+		send(d->csocket, mensaje, sizeof(char)*strlen(mensaje), 0);
+		close(d->csocket);
+		free(d);
+		pthread_exit(NULL);
 	}
-
+	return 0;
 }
 
 
