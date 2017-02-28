@@ -17,12 +17,13 @@ volatile int stop=0;
 typedef struct _data{
 	/** Socket de la conexion que atiende el hilo */
 	int csocket;
-	/** Contenido del comando completo*/
+	/** Contenido del mensaje*/
 	char *mensaje;
+	char *ip;	
 } data;
 
 /*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
-int (*listaComandos[])(void*) = {pass, nick, user} ;
+int (*listaComandos[])(void*) = {pass, nick, user, NULL, NULL, NULL, quit} ;
 
 /*
 void manejador_SIGINT(int sig){
@@ -103,6 +104,7 @@ int main(int argc, char *argv[]){
 		if ((tdata_aux = malloc(sizeof(data))) != NULL &&
 		    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
 			tdata_aux->csocket=connfd;
+			/********************************************************************/
 			if (pthread_create(taux,NULL,
 			  (void * (*)(void *)) atiende_cliente, tdata_aux) !=0){
 				syslog(LOG_ERR, "IRCServ: Error en pthread_create");
@@ -146,19 +148,25 @@ void * atiende_cliente(data * d){
 		}
 
 		command = IRC_CommandQuery(buff);
-		if(command < 0 || command > 2){
+		strcpy(d->mensaje, buff);
+		if(command < 0 || command > 6){
 			syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
 			command);
 		} else {
 		/*Llamo a la funcion del comando  correspondiente*/
-        		(*listaComandos[command - 1])((void *)d);
+        	if ((*listaComandos[command - 1])((void *)d) == 1){ /*Ejecuto comando quit*/
+				close(d->csocket);
+				free(d);
+				pthread_exit(NULL);
+			}
+			
 		}
-		sprintf(buff, "Comando: %ld \n", command);	
-		/*Enviamos mensaje*/
+		/*sprintf(buff, "Comando: %ld \n", command);	
+		
 		if ( send(d->csocket, buff, nlines,0)== -1){
 			syslog(LOG_ERR, "IRCServ: Error en send(): %d",
 			errno);
-		}
+		}*/
 	}
 
 	close(d->csocket);
@@ -191,25 +199,67 @@ int pass(void* info){
 */
 
 int nick(void* info){
-	data *d = (data *) info; // esto no hace nada
+	data *d = (data *) info; 
+	char msg[100];
 	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	sprintf(msg, "Has escrito el comando nick\n");
+	send(d->csocket, msg, sizeof(char)*strlen(msg), 0);
 	return 0;
 }
+
 
 /**
 *@brief Función que atiende al commando USER
 *@param
 *@return
 */
-
+/*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
 int user(void* info){
-	data *d = (data *) info;
-	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+
+	data *d = (data *) info;	
+	long res = 0;
+	char *prefix, *user, *modehost, *serverother, *realname;
+
+
+	res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname);
+
+	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
+		fprintf(stderr, "\nPARAMETROS INSUFICIENTES\n");
+	}else{ //TODO como ver si el usuario ya estaba registrado
+		/*switch(IRCTADUser_New (user, char *nick, char *realname, char *password, modehost, char *IP, d->csocket)){
+			case
+		}*/
+
+	}
+
 	return 0;
 }
 
 
+/**
+*@brief Función que atiende al commando QUIT
+*@param
+*@return
+*/
+int quit(void* info){
+	data *d = (data *) info;
+	char *prefix, *msg;
+	long res = 0;
+	char mensaje[1000];
 
+	res = IRCParse_Quit (d->mensaje, &prefix, &msg);
+	
+	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
+		sprintf(mensaje, "Error en el comando QUIT\n");
+		send(d->csocket, mensaje, sizeof(char)*strlen(msg), 0);
+		return 0;
+	}else{ /*Todo ok*/
+		sprintf(mensaje, "Cerrando conexión...\n");
+		send(d->csocket, mensaje, sizeof(char)*strlen(msg), 0);
+		return 1;
+	}
+
+}
 
 
 

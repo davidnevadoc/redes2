@@ -32,6 +32,7 @@
 int pass(void* info);
 int nick(void* info);
 int user(void* info);
+int quit(void* info);
 
 
 
