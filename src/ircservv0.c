@@ -1,4 +1,3 @@
-
 /**
  * Version 0 del sevidor IRC
  *
@@ -18,8 +17,13 @@ volatile int stop=0;
 typedef struct _data{
 	/** Socket de la conexion que atiende el hilo */
 	int csocket;
-
+	/** Contenido del comando completo*/
+	char *mensaje;
 } data;
+
+/*Lista con los comandos disponibles,*/
+int (*listaComandos[])(void*) = {pass, nick, user} ;
+
 /*
 void manejador_SIGINT(int sig){
 	stop=1;
@@ -126,20 +130,33 @@ int main(int argc, char *argv[]){
  * @param d Estructura de datos data
  */
 void * atiende_cliente(data * d){
-	/*Numero de lineas recividas por el socket*/
+	/*Numero de lineas recibidas por el socket*/
 	ssize_t nlines=0;
 	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
-	long command =0 ;
+	long command = 0 ;
+
+ 	/*TODO Aqui deberiamos hacer el pipeline*/
 	while (!stop){
 
 		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "Error en recv(): %d",
 			errno);
 		}
+
 		command = IRC_CommandQuery(buff);
-		sprintf(buff, "Comando: %ld", command);	
+		/*fprintf(stderr, "\nSe ha leido el comando %ld \n", command);*/
+		if(command < 0 || command > 2){
+			syslog(LOG_ERR, "Error al leer el comando %s", buff);
+		}
+
+		strcpy(d->mensaje, buff);
+		/*Llamo a la funcion del comando  correspondiente*/
+        (*listaComandos[command - 1])((void *)d); 
+
+		sprintf(buff, "Comando: %ld \n", command);	
+		
 		if ( send(d->csocket, buff, nlines,0)== -1){
 			syslog(LOG_ERR, "Error en send(): %d",
 			errno);
@@ -150,4 +167,54 @@ void * atiende_cliente(data * d){
 	free(d);
 	pthread_exit(NULL);
 }
+
+
+/****************COMANDOS****************/
+
+
+
+/**
+*@brief Función que atiende al commando PASS
+*@param
+*@return
+*/
+
+int pass(void* info){
+	data *d = (data *) info;
+	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	return 0;
+}
+
+
+/**
+*@brief Función que atiende al commando NICK
+*@param
+*@return
+*/
+
+int nick(void* info){
+	data *d = (data *) info;
+	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	return 0;
+}
+
+/**
+*@brief Función que atiende al commando USER
+*@param
+*@return
+*/
+
+int user(void* info){
+	data *d = (data *) info;
+	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	return 0;
+}
+
+
+
+
+
+
+
+
 

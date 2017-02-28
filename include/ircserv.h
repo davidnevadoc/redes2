@@ -27,6 +27,11 @@
 #define FAILURE -1
 #define MAX_QUEUE 10
 #define BUFF_SIZE 500
+#define MAX_MSG 512
+
+int pass(void* info);
+int nick(void* info);
+int user(void* info);
 
 
 
