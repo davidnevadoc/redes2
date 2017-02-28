@@ -21,7 +21,7 @@ typedef struct _data{
 	char *mensaje;
 } data;
 
-/*Lista con los comandos disponibles,*/
+/*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
 int (*listaComandos[])(void*) = {pass, nick, user} ;
 
 /*
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
 	bzero(&cli, sizeof(cli));
 	/*Armar manejador de sennal*//*
 	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
-		perror("Error en la captura de SIGINT");
+		perror("IRCServ: Error en la captura de SIGINT");
 		exit(EXIT_FAILURE);
 	}
 	*/
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
-		syslog(LOG_ERR, "Error en sockfd()");
+		syslog(LOG_ERR, "IRCServ: Error en sockfd()");
 		exit(FAILURE);
 	} 
 	
@@ -77,14 +77,14 @@ int main(int argc, char *argv[]){
 	
 	if ( bind(sockfd, (struct sockaddr * ) &serv,
 		 sizeof(serv) ) == -1){
-		syslog(LOG_ERR, "Error en bind(): %d",
+		syslog(LOG_ERR, "IRCServ: Error en bind(): %d",
 		 errno);
 		exit(FAILURE);
 	}
 
 	/*Conexion */
 	if ( listen(sockfd, MAX_QUEUE) == -1 ) {
-		syslog(LOG_ERR, "Error en listen(): %d",
+		syslog(LOG_ERR, "IRCServ: Error en listen(): %d",
 		 errno);
 		exit(FAILURE);
 	}
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]){
 	while(!stop){
 		clilen= sizeof(cli);
 		if( (connfd=accept(sockfd, &cli, &clilen)) == -1){
-			syslog(LOG_ERR,"Error en accept(): %d",
+			syslog(LOG_ERR,"IRCServ: Error en accept(): %d",
 			 errno);
 		}
 		/*Lanzamos hilo que atiende al cliente*/
@@ -105,14 +105,14 @@ int main(int argc, char *argv[]){
 			tdata_aux->csocket=connfd;
 			if (pthread_create(taux,NULL,
 			  (void * (*)(void *)) atiende_cliente, tdata_aux) !=0){
-				syslog(LOG_ERR, "Error en pthread_create");
+				syslog(LOG_ERR, "IRCServ: Error en pthread_create");
 			}
 			/*Igualamos tdata_aux a null , a partir de ahora solo 
 			se gestiona desde el hilo*/		
 			tdata_aux=NULL;
 			chilo++;
 		} else {
-			syslog(LOG_ERR, "Error en malloc(): No se pudo reservar memoria"
+			syslog(LOG_ERR, "IRCServ: Error en malloc(): No se pudo reservar memoria"
 				" para la estructura del hilo");
 		}
 	}
@@ -141,24 +141,22 @@ void * atiende_cliente(data * d){
 	while (!stop){
 
 		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
-			syslog(LOG_ERR, "Error en recv(): %d",
+			syslog(LOG_ERR, "IRCServ: Error en recv(): %d",
 			errno);
 		}
 
 		command = IRC_CommandQuery(buff);
-		/*fprintf(stderr, "\nSe ha leido el comando %ld \n", command);*/
 		if(command < 0 || command > 2){
-			syslog(LOG_ERR, "Error al leer el comando %s", buff);
-		}
-
-		strcpy(d->mensaje, buff);
+			syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
+			command);
+		} else {
 		/*Llamo a la funcion del comando  correspondiente*/
-        (*listaComandos[command - 1])((void *)d); 
-
+        		(*listaComandos[command - 1])((void *)d);
+		}
 		sprintf(buff, "Comando: %ld \n", command);	
-		
+		/*Enviamos mensaje*/
 		if ( send(d->csocket, buff, nlines,0)== -1){
-			syslog(LOG_ERR, "Error en send(): %d",
+			syslog(LOG_ERR, "IRCServ: Error en send(): %d",
 			errno);
 		}
 	}
@@ -193,7 +191,7 @@ int pass(void* info){
 */
 
 int nick(void* info){
-	data *d = (data *) info;
+	data *d = (data *) info; // esto no hace nada
 	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
 	return 0;
 }
