@@ -29,10 +29,13 @@
 #define BUFF_SIZE 500
 #define MAX_MSG 512
 
-int pass(void* info);
-int nick(void* info);
-int user(void* info);
-int quit(void* info);
+typedef struct _data data;
+
+int pass(data* d);
+int nick(data* d);
+int user(data* d);
+int quit(data* d);
+
 
 
 

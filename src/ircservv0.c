@@ -14,16 +14,16 @@ volatile int stop=0;
 /**
  * @brief Estructura para el paso de parametros a la funcion de los hilos
  */
-typedef struct _data{
+struct _data{
 	/** Socket de la conexion que atiende el hilo */
 	int csocket;
 	/** Contenido del mensaje*/
 	char *mensaje;
 	char *ip;	
-} data;
+};
 
 /*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
-int (*listaComandos[])(void*) = {pass, nick, user, NULL, NULL, NULL, quit} ;
+int (*listaComandos[])(data*) = {pass, nick, user, NULL, NULL, NULL, quit} ;
 
 /*
 void manejador_SIGINT(int sig){
@@ -148,13 +148,12 @@ void * atiende_cliente(data * d){
 		}
 		
 		command = IRC_CommandQuery(buff);
-		fprintf(stderr, "%d", command);
 		sprintf(d->mensaje,"%s", buff);
 		if(command < 0 || command > 7){
 			syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
 			command);
 		} else { /*Llamo a la funcion del comando  correspondiente*/
-        	(*listaComandos[command - 1])((void *)d);
+        	(*listaComandos[command - 1])(d);
 		}
 		/*sprintf(buff, "Comando: %ld \n", command);	
 		 
@@ -180,8 +179,7 @@ void * atiende_cliente(data * d){
 *@return
 */
 /*De momento solo muestra la contraseña introducida*/
-int pass(void* info){
-	data *d = (data *) info;
+int pass(data* d){
 	long res = 0;
 	char *prefix, *password;
 	char ans[100];
@@ -205,22 +203,20 @@ int pass(void* info){
 *@return
 */
 
-int nick(void* info){
-	data *d = (data *) info; 
+int nick(data* d){
 	char ans[100];
 	long res = 0;
-	char *msg, *prefix, *nick;
+	char *msg = NULL, *prefix = NULL, *nick = NULL;
 
-	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
-
+	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
     res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg);
 	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
 		sprintf(msg, "Parametros insuficientes\n");
 	}else{ 
-		if(UTestNick(nick) == TRUE){ //Nick ya existente
-			sprintf(ans, "Nick ya existente\n");
-		}else{ //TODO Hay que ver si es nuevo nick o cambio
-			sprintf(ans, "Has recibido el nick: %s\n", nick);
+		if(prefix == NULL){ //Nuevo nick
+
+		}else{ //Cambio de nick
+
 		}
 	}
 
@@ -235,9 +231,7 @@ int nick(void* info){
 *@return
 */
 /*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
-int user(void* info){
-
-	data *d = (data *) info;	
+int user(data* d){	
 	long res = 0;
 	char *prefix, *user, *modehost, *serverother, *realname;
 
@@ -261,13 +255,12 @@ int user(void* info){
 *@param
 *@return
 */
-int quit(void* info){
-	data *d = (data *) info;
+int quit(data* d){
 	char *prefix, *msg;
 	long res = 0;
 	char mensaje[100];
 
-	res = IRCParse_Quit (d->mensaje, &prefix, &msg);
+	res = IRCParse_Quit (d->mensaje, &prefix, &msg);//msg contiene el mensaje que escribe el user al irse?
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
 		sprintf(mensaje, "Error en el comando QUIT\n");
@@ -282,7 +275,11 @@ int quit(void* info){
 	return 0;
 }
 
-
+/**
+*@brief Función que atiende al commando QUIT
+*@param
+*@return
+*/
 
 
 
