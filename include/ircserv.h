@@ -29,6 +29,9 @@
 #define BUFF_SIZE 500
 #define MAX_MSG 512
 
+#define IPV4ADDRSIZE 4
+#define IPV6ADDRSIZE 16
+
 typedef struct _data data;
 
 int pass(data* d);

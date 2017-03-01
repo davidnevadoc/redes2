@@ -15,15 +15,15 @@ volatile int stop=0;
  * @brief Estructura para el paso de parametros a la funcion de los hilos
  */
 struct _data{
-	/** Socket de la conexion que atiende el hilo */
-	int csocket;
+	
 	/** Contenido del mensaje*/
 	char *mensaje;
-	char *ip;	
+
+	struct user * usuario;	
 };
 
 /*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
-int (*listaComandos[])(data*) = {pass, nick, user, NULL, NULL, NULL, quit} ;
+int (*listaComandos[])(data *) = {pass, nick, user, NULL, NULL, NULL, quit} ;
 
 /*
 void manejador_SIGINT(int sig){
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 	int sockfd =-1, connfd =-1, chilo=0;
 	uint16_t port =0;
 	socklen_t clilen = 0;
-	data *tdata_aux = NULL;
+	data *data_aux = NULL;
 	//TODO Implementar control sobre los hilos
 	pthread_t * taux= NULL;
 
@@ -101,22 +101,36 @@ int main(int argc, char *argv[]){
 			 errno);
 		}
 		/*Lanzamos hilo que atiende al cliente*/
-		if ((tdata_aux = malloc(sizeof(data))) != NULL &&
-		    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
-			tdata_aux->csocket=connfd;
-			/********************************************************************/
-			if (pthread_create(taux,NULL,
-			  (void * (*)(void *)) atiende_cliente, tdata_aux) !=0){
-				syslog(LOG_ERR, "IRCServ: Error en pthread_create");
-			}
-			/*Igualamos tdata_aux a null , a partir de ahora solo 
-			se gestiona desde el hilo*/		
-			tdata_aux=NULL;
-			chilo++;
+		if(cli.sa_family!=AF_INET && cli.sa_family!=AF_INET6){
+			syslog(LOG_ERR, "IRCServ: Address family not supported");
 		} else {
-			syslog(LOG_ERR, "IRCServ: Error en malloc(): No se pudo reservar memoria"
+			if ((data_aux = malloc(sizeof(data))) != NULL &&
+			    (data_aux->usuario=malloc(sizeof(User))) != NULL &&
+			    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
+				data_aux->usuario->socket=connfd;
+				/*Resrvamos memoria para el campo IP (v4 o v6)*/
+				if(cli.sa_family!=AF_INET){
+					data_aux->usuario->IP=malloc(IPV4ADDRSIZE);
+					memcpy(data_aux->usuario->IP, cli.sa_data,IPV4ADDRSIZE);	
+				} else {
+					data_aux->usuario->IP=malloc(IPV6ADDRSIZE);
+					memcpy(data_aux->usuario->IP, cli.sa_data,IPV4ADDRSIZE);	
+				}
+				/********************************************************************/
+				if (pthread_create(taux,NULL,
+				  (void * (*)(void *)) atiende_cliente, data_aux) !=0){
+					syslog(LOG_ERR, "IRCServ: Error en pthread_create");
+				}
+				/*Igualamos data_aux->usuario a null , a partir de ahora solo 
+				se gestiona desde el hilo*/		
+				data_aux=NULL;
+				chilo++;
+			} else {
+				syslog(LOG_ERR, "IRCServ: Error en"
+				" malloc(): No se pudo reservar memoria"
 				" para la estructura del hilo");
-		}
+			}
+		}	
 	}
 	close(sockfd);
 	printf("Servidor cerrado\n");
@@ -131,39 +145,41 @@ int main(int argc, char *argv[]){
  * @brief Funcion que atiende cada conexion 
  * @param d Estructura de datos data
  */
-void * atiende_cliente(data * d){
+void * atiende_cliente(data* d){
 	/*Numero de lineas recibidas por el socket*/
 	ssize_t nlines=0;
 	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
 	long command = 0;
+	/*Usuario de esta conexion*/
 
  	/*TODO Aqui deberiamos hacer el pipeline*/
 	while (!stop){
-		buff[nlines]='\0';
-		if ( (nlines=recv(d->csocket, buff, BUFF_SIZE, 0)) == -1){
-			syslog(LOG_ERR, "IRCServ: Error en recv(): %d",
-			errno);
-		}
 		
-		command = IRC_CommandQuery(buff);
-		sprintf(d->mensaje,"%s", buff);
-		if(command < 0 || command > 7){
-			syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
-			command);
-		} else { /*Llamo a la funcion del comando  correspondiente*/
-        	(*listaComandos[command - 1])(d);
+		if ( (nlines=recv(d->usuario->socket, buff, BUFF_SIZE, 0)) == -1){
+			syslog(LOG_ERR, "IRCServ: Error en recv(): %s",
+			strerror(errno));
+		} else {
+			buff[nlines]='\0';
+			command = IRC_CommandQuery(buff);
+			sprintf(d->mensaje,"%s", buff);
+			if(command < 0 || command > 7){
+				syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
+				command);
+			} else { /*Llamo a la funcion del comando  correspondiente*/
+				(*listaComandos[command - 1])(d);
+			}
 		}
 		/*sprintf(buff, "Comando: %ld \n", command);	
 		 
-		if ( send(d->csocket, buff, nlines,0)== -1){
+		if ( send(d->usuario->socket, buff, nlines,0)== -1){
 			syslog(LOG_ERR, "IRCServ: Error en send(): %d",
 			errno);
 		}*/
 	}
 
-	close(d->csocket);
+	close(d->usuario->socket);
 	free(d);
 	pthread_exit(NULL);
 }
@@ -192,7 +208,7 @@ int pass(data* d){
 		sprintf(ans, "Has introducido la contrasenna: %s\n", password);
 	}
 
-	send(d->csocket, ans, sizeof(char)*strlen(ans), 0);
+	send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
 
@@ -206,10 +222,18 @@ int pass(data* d){
 int nick(data* d){
 	char ans[100];
 	long res = 0;
-	char *msg = NULL, *prefix = NULL, *nick = NULL;
+	char *msg = NULL, *prefix = NULL;
 
 	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
-    res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg);
+	if( (res = IRCParse_Nick (d->mensaje, &prefix, &(d->usuario->nick), &msg))== IRC_OK){
+		
+
+	}else{
+
+	}
+	
+
+
 	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
 		sprintf(msg, "Parametros insuficientes\n");
 	}else{ 
@@ -220,7 +244,7 @@ int nick(data* d){
 		}
 	}
 
-	send(d->csocket, ans, sizeof(char)*strlen(ans), 0);
+	send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
 
@@ -241,7 +265,7 @@ int user(data* d){
 	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
 		fprintf(stderr, "\nPARAMETROS INSUFICIENTES\n");
 	}else{ //TODO como ver si el usuario ya estaba registrado
-		/*switch(IRCTADUser_New (user, char *nick, char *realname, char *password, modehost, char *IP, d->csocket)){
+		/*switch(IRCTADUser_New (user, char *nick, char *realname, char *password, modehost, char *IP, d->usuario->socket)){
 			case
 		}*/
 	}
@@ -259,16 +283,15 @@ int quit(data* d){
 	char *prefix, *msg;
 	long res = 0;
 	char mensaje[100];
-
 	res = IRCParse_Quit (d->mensaje, &prefix, &msg);//msg contiene el mensaje que escribe el user al irse?
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
 		sprintf(mensaje, "Error en el comando QUIT\n");
-		send(d->csocket, mensaje, sizeof(char)*strlen(mensaje), 0);
+		send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 	}else{ /*Todo ok*/
 		sprintf(mensaje, "Cerrando conexión...\n");
-		send(d->csocket, mensaje, sizeof(char)*strlen(mensaje), 0);
-		close(d->csocket);
+		send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
+		close(d->usuario->socket);
 		free(d);
 		pthread_exit(NULL);
 	}
