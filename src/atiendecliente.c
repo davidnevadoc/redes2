@@ -3,7 +3,21 @@
 /*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
 int (*listaComandos[])(data *) = {pass, nick, user, NULL, NULL, NULL, quit} ;
 
-
+User * user_init(int connfd){
+	User * user = NULL;
+	if( (user = (User *) malloc(sizeof(User))) ==NULL ) return NULL;
+	user->user=NULL;
+	user->away=NULL;
+	user->host=NULL;
+	user->IP=NULL;
+	user->Next=NULL;
+	user->nick=NULL;
+	user->password=NULL;
+	user->real=NULL;
+	user->socket=connfd;
+	user->userId =0;
+	return user;
+}
 
 /**
  * Funcion INTERNA ejecutada por cada hilo que atiende una conexion.
@@ -72,9 +86,9 @@ int Atiende_cliente(struct sockaddr cli, int connfd){
 		return ERROR;
 	}
 	if ((data_aux = malloc(sizeof(data))) != NULL &&
-	    (data_aux->usuario=malloc(sizeof(User))) != NULL &&
+	    (data_aux->usuario=user_init(connfd)) != NULL &&
 	    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
-		data_aux->usuario->socket=connfd;
+		
 		/*Resrvamos memoria para el campo IP (v4 o v6)*/
 		if(cli.sa_family!=AF_INET){
 			data_aux->usuario->IP=malloc(IPV4ADDRSIZE);
@@ -85,7 +99,7 @@ int Atiende_cliente(struct sockaddr cli, int connfd){
 			addrsize=IPV6ADDRSIZE;	
 		}
 		/*Control de la reserva de memoria*/
-		if(!data_aux){
+		if(!data_aux->usuario->IP){
 			syslog(LOG_ERR, "IRCServ: Error en"
 			" malloc(): No se pudo reservar memoria"
 			" para la estructura del hilo");
