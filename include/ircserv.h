@@ -11,35 +11,35 @@
 #define IRCSERV_H
 
 #include <redes2/irc.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <strings.h>
 #include <string.h>
 #include <unistd.h> 
-#include <errno.h> 
-#include <signal.h>
-#include <pthread.h>
-
-#define SUCCESS 0
-#define FAILURE -1
-#define MAX_QUEUE 10
-#define BUFF_SIZE 500
-#define MAX_MSG 512
-
-#define IPV4ADDRSIZE 4
-#define IPV6ADDRSIZE 16
-
-typedef struct _data data;
-
-int pass(data* d);
-int nick(data* d);
-int user(data* d);
-int quit(data* d);
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 
 
 
+
+#define OK 0
+#define ERROR -1
+
+/**
+ * @brief Estructura para el paso de parametros a la funcion de los hilos
+ */
+typedef struct _data{
+	
+	/** Contenido del mensaje*/
+	char *mensaje;
+
+	struct user * usuario;	
+}data;
+
+
+#include "utilities.h"
 #endif

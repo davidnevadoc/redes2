@@ -14,7 +14,8 @@
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
 	struct sockaddr cli;
-	int sockfd =-1, connfd =-1, chilo=0;
+
+	int sockfd =-1, connfd =-1;
 	uint16_t port =0;
 	socklen_t clilen = 0;
 	
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]){
 	/*Armar manejador de sennal*//*
 	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
 		perror("IRCServ: Error en la captura de SIGINT");
-		exit(EXIT_FAILURE);
+		exit( ERROR);
 	}
 	*/
 	/*Comprobacion de parametros*/
@@ -36,15 +37,15 @@ int main(int argc, char *argv[]){
 	} else {
 		printf("Entrada invalida."
 			"Especifique puerto de escucha\n");
-		exit(EXIT_FAILURE);	
+		exit( ERROR);	
 	}
 	if(port<1024){
 		printf("%d Puerto no valido\n", port);
-		exit(EXIT_FAILURE);
+		exit( ERROR);
 	}
 	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
 		syslog(LOG_ERR, "IRCServ: Error en sockfd()");
-		exit(FAILURE);
+		exit(ERROR);
 	} 
 	
 	/*rellenar estructura de serv*/
@@ -57,14 +58,14 @@ int main(int argc, char *argv[]){
 		 sizeof(serv) ) == -1){
 		syslog(LOG_ERR, "IRCServ: Error en bind(): %d",
 		 errno);
-		exit(FAILURE);
+		exit(ERROR);
 	}
 
 	/*Conexion */
 	if ( listen(sockfd, MAX_QUEUE) == -1 ) {
 		syslog(LOG_ERR, "IRCServ: Error en listen(): %d",
 		 errno);
-		exit(FAILURE);
+		exit(ERROR);
 	}
 	syslog(LOG_INFO, "Socket a la escucha");
 	
@@ -77,11 +78,12 @@ int main(int argc, char *argv[]){
 			syslog(LOG_ERR,"IRCServ: Error en accept(): %d",
 			 errno);
 		}
-		Atiende_cliente();
+		
+		Atiende_cliente(cli, connfd);
 	}
 	close(sockfd);
 	printf("Servidor cerrado\n");
-	exit(SUCCESS);
+	exit(OK);
 }
 
 
