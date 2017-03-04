@@ -4,7 +4,7 @@
 
 #include "ircserv.h"
 /**
-*@brief Función que atiende al commando PASS
+*@brief Función que atiende al comando PASS
 *@param
 *@return
 */
@@ -12,7 +12,7 @@
 int pass(data* d);
 
 /**
-*@brief Función que atiende al commando NICK
+*@brief Función que atiende al comando NICK
 *@param
 *@return
 */
@@ -20,7 +20,7 @@ int pass(data* d);
 int nick(data* d);
 
 /**
-*@brief Función que atiende al commando USER
+*@brief Función que atiende al comando USER
 *@param
 *@return
 */
@@ -29,11 +29,27 @@ int user(data* d);
 
 
 /**
-*@brief Función que atiende al commando QUIT
+*@brief Función que atiende al comando QUIT
 *@param
 *@return
 */
 int quit(data* d);
+
+
+/**
+*@brief Función que atiende al comando JOIN
+*@param
+*@return
+*/
+int join(data* d);
+
+
+/**
+*@brief Función que atiende al comando por defecto
+*@param
+*@return
+*/
+int comandoDefault(data* d);
 
 
 #endif

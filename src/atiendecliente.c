@@ -1,7 +1,23 @@
 
 #include "../include/atiendecliente.h"
 /*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
-int (*listaComandos[])(data *) = {pass, nick, user, NULL, NULL, NULL, quit} ;
+int (*listaComandos[NUM_COMANDOS])(data *);
+
+/**
+*@brief Función que inicializa el array de funciones con 
+*		los comandos disponibles
+*/
+void inicializaComandos(){
+	int i = 0;
+	for (i=0; i<NUM_COMANDOS-1; i++){
+		listaComandos[i] = comandoDefault;
+	}
+	listaComandos[0] = pass;
+	listaComandos[1] = nick;
+	listaComandos[2] = user;
+	listaComandos[6] = quit;
+	listaComandos[8] = join;
+}
 
 User * user_init(int connfd){
 	User * user = NULL;
@@ -19,6 +35,7 @@ User * user_init(int connfd){
 	return user;
 }
 
+
 /**
  * Funcion INTERNA ejecutada por cada hilo que atiende una conexion.
  * Define el servicio basico del sevidor
@@ -33,10 +50,14 @@ void * atiende_cliente(data* d){
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
 	long command = 0;
-	/*Usuario de esta conexion*/
+	/*Condición para cerrar la conexión*/
+	int stop = 0;
 
+	char mensaje[100];
+
+	inicializaComandos();
  	/*TODO Aqui deberiamos hacer el pipeline*/
-	while (1){
+	while (stop != 1){
 		
 		if ( (messg_size=recv(d->usuario->socket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "IRCServ: Error en recv(): %s",
@@ -45,17 +66,21 @@ void * atiende_cliente(data* d){
 			buff[messg_size]='\0';
 			command = IRC_CommandQuery(buff);
 			sprintf(d->mensaje,"%s", buff);
-			if(command < 0 || command > 7){
+			if(command < 0 || command > NUM_COMANDOS){
 				syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
 				command);
 			} else { /*Llamo a la funcion del comando  correspondiente*/
-				(*listaComandos[command - 1])(d);
+				/*No sé si es buena idea hacerlo así, hay que tener cuidado 
+				para que las funciones de comandos no devuelvan nunca 1*/
+				stop = (*listaComandos[command - 1])(d);
 			}
 		}
 	}
+	/*Notificamos cierre de la conexión*/
+	sprintf(mensaje, "Cerrando conexión...\n");
+	send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 	/*liberamos recursos*/
 	close(d->usuario->socket);
-	
 	free_data(d);
 	pthread_exit(NULL);
 }

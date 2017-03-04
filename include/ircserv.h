@@ -23,11 +23,9 @@
 #include <arpa/inet.h>
 
 
-
-
-
 #define OK 0
 #define ERROR -1
+#define NUM_COMANDOS 10
 
 /**
  * @brief Estructura para el paso de parametros a la funcion de los hilos

@@ -1,7 +1,7 @@
 #include "../include/irccommands.h"
 
 /**
-*@brief Función que atiende al commando PASS
+*@brief Función que atiende al comando PASS
 *@param
 *@return
 */
@@ -11,7 +11,7 @@ int pass(data* d){
 	char *prefix, *password;
 	char ans[100];
 
-	fprintf(stderr, "\nSe ha leido %s \n", d->mensaje);
+	syslog(LOG_INFO,"\nSe ha leido %s \n", d->mensaje);
 	res = IRCParse_Pass (d->mensaje, &prefix, &password);
 	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
 		sprintf(ans, "Parametros insuficientes\n");
@@ -25,7 +25,7 @@ int pass(data* d){
 
 
 /**
-*@brief Función que atiende al commando NICK
+*@brief Función que atiende al comando NICK
 *@param
 *@return
 */
@@ -33,13 +33,13 @@ int pass(data* d){
 int nick(data* d){
 	char ans[100];
 	long res = 0;
-	char *prefix = NULL, * nick;
+	char *prefix = NULL, * nick, *msg = NULL;
 
 	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
-	if( (res = IRCParse_Nick (d->mensaje, &prefix, &nick, NULL) )!= IRC_OK){
+	/*No deberiamos informar del caso en el que se escriba mal el comando???*/
+	if( (res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg) )!= IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCParse_Nick: %ld", res );
 		return ERROR;
-
 	}
 	/*Solo si el usuario existe se intenta cambiar el nick, si no existe,
 	(no esta creado), simplemente se asigna un nuevo valor a nick de la
@@ -59,40 +59,56 @@ int nick(data* d){
 		}
 
 	}
-	
 	/*El nick se asigna de forma local de todas formas*/
 	d->usuario->nick=nick;
+	/*Informamos al usuario*/
+	sprintf(ans, "Has introducido el NICK: %s\n", nick);
+	send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
 	return OK;
 }
 
 
 /**
-*@brief Función que atiende al commando USER
+*@brief Función que atiende al comando USER
 *@param
 *@return
 */
 /*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
 int user(data* d){	
+	char ans[100];
 	long res = 0;
 	char *prefix, *user, *modehost, *serverother, *realname;
 
+	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
 
-	res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname);
+	if((res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en la funcion user. IRCParse_User: %ld", res );
+		return ERROR;
+	}else{ 
+		switch(IRCTADUser_New (user, d->usuario->nick, realname, d->usuario->password,
+				modehost, d->usuario->IP, d->usuario->socket)){
+			case IRCERR_NICKUSED:
+				sprintf(ans, "El nick %s ya está registrado", d->usuario->nick);
+				break;
+			case IRC_OK:
+				sprintf(ans, "Usuario con nick %s registrado correctamente\n",d->usuario->nick );
+				break;
+			default:
+				sprintf(ans, "Error al registrar el usuario\n");
+				send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
+				return ERROR;
+		}
 
-	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
-		fprintf(stderr, "\nPARAMETROS INSUFICIENTES\n");
-	}else{ //TODO como ver si el usuario ya estaba registrado
-		/*switch(IRCTADUser_New (user, char *nick, char *realname, char *password, modehost, char *IP, d->usuario->socket)){
-			case
-		}*/
 	}
 
+	/*Notificamos al usuario*/
+	send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
 
 
 /**
-*@brief Función que atiende al commando QUIT
+*@brief Función que atiende al comando QUIT
 *@param
 *@return
 */
@@ -100,23 +116,47 @@ int quit(data* d){
 	char *prefix, *msg;
 	long res = 0;
 	char mensaje[100];
+
+	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
+
 	res = IRCParse_Quit (d->mensaje, &prefix, &msg);//msg contiene el mensaje que escribe el user al irse?
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
 		sprintf(mensaje, "Error en el comando QUIT\n");
 		send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
-	}
-	/*TODO Esto esmejor moverlo a la funcion atender_cliente.
-	Podemos pasar un parametro stop que quit ponga a 0 y de esta forma
-	atender_cliente sale del bucle y libera todos los recusos*/
-	/*
 	}else{ 
-		sprintf(mensaje, "Cerrando conexión...\n");
-		send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
-		close(d->usuario->socket);
-		free(d);
-		pthread_exit(NULL);
+		return 1;
 	}
-	*/
+	return 0;
+}
+
+/**
+*@brief Función que atiende al comando PASS
+*@param
+*@return
+*/
+/*De momento solo muestra la contraseña introducida*/
+int join(data* d){
+
+	char *prefix = NULL, *msg = NULL, *channel = NULL, *key = NULL;
+	long res = 0;
+
+	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
+
+	res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg);
+
+	return 0;
+}
+
+
+/**
+*@brief Función que atiende al comando JOIN
+*@param
+*@return
+*/
+int comandoDefault(data* d){
+	char ans[100];
+	sprintf(ans, "Este comando no está implementado \n");
+	send(d->usuario->socket, ans, sizeof(char)*strlen(ans), 0);
 	return 0;
 }
