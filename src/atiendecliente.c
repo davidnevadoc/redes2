@@ -50,14 +50,12 @@ void * atiende_cliente(data* d){
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
 	long command = 0;
-	/*Condición para cerrar la conexión*/
-	int stop = 0;
 
 	char mensaje[100];
 
 	inicializaComandos();
  	/*TODO Aqui deberiamos hacer el pipeline*/
-	while (stop != 1){
+	while (d->stop != 1){
 		
 		if ( (messg_size=recv(d->usuario->socket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "IRCServ: Error en recv(): %s",
@@ -70,9 +68,7 @@ void * atiende_cliente(data* d){
 				syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
 				command);
 			} else { /*Llamo a la funcion del comando  correspondiente*/
-				/*No sé si es buena idea hacerlo así, hay que tener cuidado 
-				para que las funciones de comandos no devuelvan nunca 1*/
-				stop = (*listaComandos[command - 1])(d);
+				(*listaComandos[command - 1])(d);
 			}
 		}
 	}

@@ -45,9 +45,9 @@ int nick(data* d){
 	(no esta creado), simplemente se asigna un nuevo valor a nick de la
 	estructura usuario que mantiene el hilo de forma local */
 	if(d->usuario->nick){
-		if (res= IRCTADUser_Set(d->usuario->userId, d->usuario->user,
+		if ( (res= IRCTADUser_Set(d->usuario->userId, d->usuario->user,
 				d->usuario->nick, d->usuario->real, 
-				NULL, nick, NULL)!=IRC_OK){
+				NULL, nick, NULL))!=IRC_OK){
 				syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCTADUserSet: %ld", res );
 
 			/*TODO MUY IMPORTANTE. Hay que diferenciar entre tipos de errores
@@ -122,14 +122,14 @@ int quit(data* d){
 	res = IRCParse_Quit (d->mensaje, &prefix, &msg);//msg contiene el mensaje que escribe el user al irse?
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
+		syslog(LOG_ERR, "IRCServ: Error en el comando QUIT, %ld", res);
 		sprintf(mensaje, "Error en el comando QUIT\n");
 		send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
-	}else{ 
-		return 1;
+		return ERROR;
 	}
-	return 0;
+	d->stop=1;
+	return OK;
 }
-
 /**
 *@brief Función que atiende al comando PASS
 *@param
@@ -137,20 +137,28 @@ int quit(data* d){
 */
 /*De momento solo muestra la contraseña introducida*/
 int join(data* d){
-
-	char *prefix = NULL, *msg = NULL, *channel = NULL, *key = NULL;
+	
+	char *prefix = NULL, *msg = NULL, *channel = NULL;
+	char *key = NULL, *usermode =NULL;
 	long res = 0;
 
 	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
 
-	res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg);
+	if ( (res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg)) == IRC_OK){
+		if ( IRCTAD_Join(channel, d->usuario->nick, usermode ,key ) == IRC_OK){
+			syslog(LOG_INFO, "Usuario %s, se unio al canal %s",
+				 d->usuario->nick, channel);
+			return OK;
+		}
+	}
+	syslog(LOG_ERR, "IRCServ: Error en el comando JOIN, %ld", res);
+	return ERROR;
 
-	return 0;
 }
 
 
 /**
-*@brief Función que atiende al comando JOIN
+*@brief Función que atiende al comando por defecto
 *@param
 *@return
 */

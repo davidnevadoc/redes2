@@ -34,7 +34,8 @@ typedef struct _data{
 	
 	/** Contenido del mensaje*/
 	char *mensaje;
-
+	/* Variable que controla el cierre de la conexion*/
+	int stop;
 	struct user * usuario;	
 }data;
 
