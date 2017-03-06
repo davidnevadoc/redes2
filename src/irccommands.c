@@ -86,22 +86,26 @@ int nick(data* d){
 /*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
 int user(data* d){	
 	char ans[100];
+	char * reply= NULL;
 	long res = 0;
-	char *prefix, *user, *modehost, *serverother, *realname;
-
+	char *prefix, *user, *modehost, *serverother, *realname, *nick;
+	prefix = user = modehost = serverother = realname = NULL;
+	nick = d->usuario->nick;
 	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
 
 	if((res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion user. IRCParse_User: %ld", res );
 		return ERROR;
 	}else{ 
-		switch(IRCTADUser_New (user, d->usuario->nick, realname, d->usuario->password,
+		switch(IRCTADUser_New (user, nick, realname, d->usuario->password,
 				modehost, d->usuario->IP, d->usuario->socket)){
 			case IRCERR_NICKUSED:
-				sprintf(ans, "El nick %s ya está registrado", d->usuario->nick);
+				sprintf(ans, "El nick %s ya está registrado", nick);
 				break;
 			case IRC_OK:
-				sprintf(ans, "Usuario con nick %s registrado correctamente\n",d->usuario->nick );
+				IRCMsg_RplWelcome ( &reply, IRCNAME, nick, nick, user, serverother);
+				send(d->usuario->socket, reply, strlen(reply), 0);
+				free(reply);
 				break;
 			default:
 				sprintf(ans, "Error al registrar el usuario\n");
