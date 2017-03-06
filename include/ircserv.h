@@ -27,6 +27,9 @@
 #define ERROR -1
 #define NUM_COMANDOS 10
 
+#define NOTCREATED -1
+#define IRCNAME "valknutserver"
+
 /**
  * @brief Estructura para el paso de parametros a la funcion de los hilos
  */

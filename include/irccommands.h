@@ -2,6 +2,9 @@
 #ifndef IRCCOMMANDS_H
 #define IRCCOMMANDS_H
 
+
+#define MAXREPLY 256
+
 #include "ircserv.h"
 /**
 *@brief Función que atiende al comando PASS

@@ -19,22 +19,6 @@ void inicializaComandos(){
 	listaComandos[8] = join;
 }
 
-User * user_init(int connfd){
-	User * user = NULL;
-	if( (user = (User *) malloc(sizeof(User))) ==NULL ) return NULL;
-	user->user=NULL;
-	user->away=NULL;
-	user->host=NULL;
-	user->IP=NULL;
-	user->Next=NULL;
-	user->nick=NULL;
-	user->password=NULL;
-	user->real=NULL;
-	user->socket=connfd;
-	user->userId =0;
-	return user;
-}
-
 
 /**
  * Funcion INTERNA ejecutada por cada hilo que atiende una conexion.
@@ -63,6 +47,7 @@ void * atiende_cliente(data* d){
 		} else {
 			buff[messg_size]='\0';
 			command = IRC_CommandQuery(buff);
+			d->mensaje=buff;
 			sprintf(d->mensaje,"%s", buff);
 			if(command < 0 || command > NUM_COMANDOS){
 				syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
@@ -106,8 +91,7 @@ int Atiende_cliente(struct sockaddr cli, int connfd){
 		syslog(LOG_ERR, "IRCServ: Address family not supported");
 		return ERROR;
 	}
-	if ((data_aux = malloc(sizeof(data))) != NULL &&
-	    (data_aux->usuario=user_init(connfd)) != NULL &&
+	if ((data_aux = data_init(connfd) )!= NULL &&
 	    (taux = (pthread_t * ) malloc(sizeof(pthread_t))) != NULL){
 		
 		/*Resrvamos memoria para el campo IP (v4 o v6)*/
