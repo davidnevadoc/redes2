@@ -7,6 +7,7 @@
 
 
 #define BUFF_SIZE 500
+#define NUM_COMANDOS 10
 
 #include <pthread.h>
 #include "ircserv.h"

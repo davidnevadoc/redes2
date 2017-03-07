@@ -33,7 +33,9 @@ void * atiende_cliente(data* d){
 	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
-	long command = 0;
+	char * command = NULL, * command_q = NULL;
+	/*Codigo del comando recibido*/
+	long command_code = 0;
 
 	char mensaje[100];
 
@@ -44,18 +46,23 @@ void * atiende_cliente(data* d){
 		if ( (messg_size=recv(d->usuario->socket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "IRCServ: Error en recv(): %s",
 			strerror(errno));
-		} else {
-			buff[messg_size]='\0';
-			command = IRC_CommandQuery(buff);
-			d->mensaje=buff;
-			sprintf(d->mensaje,"%s", buff);
-			if(command < 0 || command > NUM_COMANDOS){
-				syslog(LOG_ERR, "IRCServ: Error al leer el comando %ld",
-				command);
+			break;
+		}
+		buff[messg_size]='\0';
+		/*La cola de mensajes se inicializa al buffer recibido*/
+		command_q = buff;
+		while(command_q){
+			command_q=IRC_UnPipelineCommands (command_q , &command);
+			command_code = IRC_CommandQuery(command);
+			d->mensaje=command;
+			if(command_code < 0 || command_code > NUM_COMANDOS){
+				syslog(LOG_ERR, "IRCServ: Error al leer el comando"
+					 "Error: %ld ", command_code);
 			} else { /*Llamo a la funcion del comando  correspondiente*/
-				(*listaComandos[command - 1])(d);
+				(*listaComandos[command_code - 1])(d);
 			}
 		}
+		
 	}
 	/*Notificamos cierre de la conexión*/
 	sprintf(mensaje, "Cerrando conexión...\n");
