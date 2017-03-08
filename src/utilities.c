@@ -20,10 +20,13 @@ User * user_init(int connfd){
 data * data_init(int connfd){
 	data * d =NULL;
 	if ( (d = malloc(sizeof(data))) == NULL) return NULL;
+	/*
 	if ( (d->usuario = user_init(connfd)) ==NULL){
 		free(d);
 		return NULL;
-	}
+	}*/
+	d->socket=connfd;
+	d->IP=NULL;
 	d->mensaje =NULL;
 	return d;
 
@@ -31,8 +34,9 @@ data * data_init(int connfd){
 }
 
 void free_data( data * d){
-	free(d->mensaje); //No se libera porque apunta a memoria estatica
-	UFreeUser(d->usuario);
+	free(d->mensaje); 
+	free(d->IP);
+	//UFreeUser(d->usuario);
 	free(d);
 
 }

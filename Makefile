@@ -9,7 +9,7 @@ SDIR=src
 ODIR=obj
 DDIR=inlude
 
-_DEPS = udpechoserver.h tcpechoserver.h ircserv.h  main.h irccommands.h atiendecliente.h utilities.h
+_DEPS = udpechoserver.h tcpechoserver.h ircserver.h  main.h irccommands.h atiendecliente.h utilities.h
 DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
 
 #UDP echo server 
@@ -27,7 +27,7 @@ _TEOBJS = $(patsubst %.c, %.o, $(_TESOURCES))
 TEOBJS = $(patsubst %,$(ODIR)/%,$(_TEOBJS))
 
 #IRC server
-_IRCSOURCES = main.c irccommands.c atiendecliente.c utilities.c
+_IRCSOURCES = main.c irccommands.c atiendecliente.c utilities.c ircserver.c
 IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 
 _IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))

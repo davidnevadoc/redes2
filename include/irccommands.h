@@ -5,7 +5,7 @@
 
 #define MAXREPLY 256
 
-#include "ircserv.h"
+#include "ircserver.h"
 /**
 *@brief Función que atiende al comando PASS
 *@param

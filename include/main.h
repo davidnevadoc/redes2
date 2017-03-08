@@ -5,7 +5,7 @@
 
 #include <errno.h> 
 
-#include "ircserv.h"
+#include "ircserver.h"
 #include "atiendecliente.h"
 
 

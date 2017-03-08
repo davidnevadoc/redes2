@@ -10,7 +10,7 @@
 #define NUM_COMANDOS 10
 
 #include <pthread.h>
-#include "ircserv.h"
+#include "ircserver.h"
 #include "irccommands.h"
 
 

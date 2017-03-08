@@ -10,7 +10,6 @@
 #define MAX_QUEUE 10
 #include "../include/main.h"
 
-
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
 	struct sockaddr cli;
@@ -22,12 +21,7 @@ int main(int argc, char *argv[]){
 
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
-	/*Armar manejador de sennal*//*
-	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
-		perror("IRCServ: Error en la captura de SIGINT");
-		exit( ERROR);
-	}
-	*/
+
 	/*Comprobacion de parametros*/
 	if(argc<2){
 		port = 55000;
@@ -68,7 +62,11 @@ int main(int argc, char *argv[]){
 		exit(ERROR);
 	}
 	syslog(LOG_INFO, "Socket a la escucha");
-	
+	if(init_var()!=OK){
+		syslog(LOG_ERR, "IRCServ: No se pudieron iniciar las variables globales");
+		//TODO cerrar sockets, liberar...
+		exit(ERROR);
+	}
 	/*bucle principal, a la espera conexiones*/
 	printf("A la espera de mensajes, escuchando puerto %d\n",
 		ntohs(serv.sin_port));

@@ -43,7 +43,7 @@ void * atiende_cliente(data* d){
  	/*TODO Aqui deberiamos hacer el pipeline*/
 	while (d->stop != 1){
 		
-		if ( (messg_size=recv(d->usuario->socket, buff, BUFF_SIZE, 0)) == -1){
+		if ( (messg_size=recv(d->socket, buff, BUFF_SIZE, 0)) == -1){
 			syslog(LOG_ERR, "IRCServ: Error en recv(): %s",
 			strerror(errno));
 			break;
@@ -66,9 +66,9 @@ void * atiende_cliente(data* d){
 	}
 	/*Notificamos cierre de la conexión*/
 	sprintf(mensaje, "Cerrando conexión...\n");
-	send(d->usuario->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
+	send(d->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 	/*liberamos recursos*/
-	close(d->usuario->socket);
+	close(d->socket);
 	free_data(d);
 	pthread_exit(NULL);
 }
@@ -103,21 +103,21 @@ int Atiende_cliente(struct sockaddr cli, int connfd){
 		
 		/*Resrvamos memoria para el campo IP (v4 o v6)*/
 		if(cli.sa_family!=AF_INET){
-			data_aux->usuario->IP=malloc(IPV4ADDRSIZE);
+			data_aux->IP=malloc(IPV4ADDRSIZE);
 			addrsize=IPV4ADDRSIZE;
 				
 		} else {
-			data_aux->usuario->IP=malloc(IPV6ADDRSIZE);
+			data_aux->IP=malloc(IPV6ADDRSIZE);
 			addrsize=IPV6ADDRSIZE;	
 		}
 		/*Control de la reserva de memoria*/
-		if(!data_aux->usuario->IP){
+		if(!data_aux->IP){
 			syslog(LOG_ERR, "IRCServ: Error en"
 			" malloc(): No se pudo reservar memoria"
 			" para la estructura del hilo");
 			return ERROR;	
 		}
-		memcpy(data_aux->usuario->IP, cli.sa_data,addrsize);
+		memcpy(data_aux->IP, cli.sa_data,addrsize);
 		/*Gestion del hilo*/
 		if (pthread_create(taux,NULL,
 		  (void * (*)(void *)) atiende_cliente, data_aux) !=0){
