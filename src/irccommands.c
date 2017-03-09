@@ -174,7 +174,7 @@ int join(data* d){
 			syslog(LOG_INFO, "Usuario %s, se unio al canal %s",
 			 get_nick(d->socket), channel);
 			IRC_ComplexUser1459 (&prefix_s, get_nick(d->socket),  get_user(d->socket),  get_host(&(d->socket)), NULL);
-			if ( IRCMsg_Join(&reply, prefix, channel, key, msg) == IRC_OK){
+			if ( IRCMsg_Join(&reply, prefix_s, NULL, key, channel) == IRC_OK){ //en el canal se pone NULL y el canal se manda como mensaje
 				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 				free(prefix_s);
 				return OK;
