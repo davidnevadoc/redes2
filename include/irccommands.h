@@ -46,7 +46,7 @@ int quit(data* d);
 */
 int join(data* d);
 
-
+int list(data *d);
 /**
 *@brief Función que atiende al comando por defecto
 *@param

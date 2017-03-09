@@ -11,7 +11,7 @@ int pass(data* d){
 	char *prefix, *password;
 	char ans[100];
 
-	syslog(LOG_INFO,"\nSe ha leido %s \n", d->mensaje);
+		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando PASS: %s", d->mensaje);
 	res = IRCParse_Pass (d->mensaje, &prefix, &password);
 	if(res == IRCERR_ERRONEUSCOMMAND || res == IRCERR_NOSTRING){ /*Datos insuficientes o erroneos*/
 		sprintf(ans, "Parametros insuficientes\n");
@@ -39,7 +39,7 @@ int nick(data* d){
 	char streply[MAXREPLY]={0};
 	char *prefix = NULL, * nick = NULL, *msg = NULL;
 
-	syslog(LOG_INFO,"IRCServ: Se ha leido %s", d->mensaje);
+		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando NICK: %s", d->mensaje);
 	if( (res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg) )!= IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCParse_Nick: %ld", res );
 		return ERROR;
@@ -92,7 +92,7 @@ int user(data* d){
 	char *prefix, *user, *modehost, *serverother, *realname, *nick;
 	prefix = user = modehost = serverother = realname = NULL;
 	nick = get_nick(d->socket);
-	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
+		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando USER: %s", d->mensaje);
 
 	if((res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion user. IRCParse_User: %ld", res );
@@ -155,11 +155,11 @@ int quit(data* d){
 	return OK;
 }
 /**
-*@brief Función que atiende al comando PASS
-*@param
-*@return
-*/
-/*De momento solo muestra la contraseña introducida*/
+ *@brief Función que atiende al comando JOIN
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+ */
+
 int join(data* d){
 	
 	char *prefix = NULL,*prefix_s= NULL, *msg = NULL, *channel = NULL;
@@ -167,14 +167,16 @@ int join(data* d){
 	char *reply =NULL;
 	long res = 0;
 
-	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando JOIN: %s", d->mensaje);
 
 	if ( (res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg)) == IRC_OK){
 		if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key )) == IRC_OK){
 			syslog(LOG_INFO, "Usuario %s, se unio al canal %s",
 			 get_nick(d->socket), channel);
-			IRC_ComplexUser1459 (&prefix_s, get_nick(d->socket),  get_user(d->socket),  get_host(&(d->socket)), NULL);
-			if ( IRCMsg_Join(&reply, prefix_s, NULL, key, channel) == IRC_OK){ //en el canal se pone NULL y el canal se manda como mensaje
+			IRC_ComplexUser1459 (&prefix_s, get_nick(d->socket),
+			  get_user(d->socket),  get_host(&(d->socket)), NULL);
+			if ( IRCMsg_Join(&reply, prefix_s, NULL, key, channel) == IRC_OK){
+				 //en el canal se pone NULL y el canal se manda como mensaje
 				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 				free(prefix_s);
 				return OK;
@@ -187,7 +189,87 @@ int join(data* d){
 	return ERROR;
 
 }
-
+/**
+ *@brief Función que atiende al comando LIST
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+ */
+int list (data *d){
+	char *prefix, *channel, *target, *mode, *topic, *reply;
+	char **list=NULL;
+	long i,res =-1, num=0;
+	int num_users=0;
+	char streply[MAXREPLY];
+	prefix=channel=target=mode=topic=reply=NULL;
+	/*Log de ejecucion del comando*/
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando LIST: %s", d->mensaje);
+	/*Parseo del mensaje*/
+	if ( (res= IRCParse_List(d->mensaje, &prefix, &channel, &target)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de list %ld", res);
+		return ERROR;
+	}
+	/*Obtencion de lista de todos los canales*/
+	if( IRCTADChan_GetList (&list, &num, NULL) != IRC_OK){	
+		syslog(LOG_ERR, "IRCServ: Error en IRCTADChan_GetList, memoria insuficiente");
+		return ERROR;
+	}
+	/*Busqueda canal especifico*/
+	if(!channel){
+		/*Bucle recorre canales*/
+		for(i=0;i<num;i++){
+			mode=IRCTADChan_GetModeChar(list[i]);
+			if( mode && !(*mode^IRCMODE_SECRET)){
+				/*get numero de usuarios*/
+				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
+				/*get topic /tema del canal*/
+				if((res=IRCTAD_GetTopic(list[i], &topic))!=IRC_OK){
+					syslog(LOG_ERR, "IRCServ: Error en Get_Topic %ld",
+						res);
+					return ERROR;
+				}
+				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
+					IRCNAME, get_nick(d->socket), list[i], num_users, topic);
+				/*Envio del mensaje*/
+				send(d->socket,streply,strlen(streply), 0);
+			}	
+		}
+	/*Busqueda general*/
+	} else {
+		/*Bucle recorre canales*/
+		for(i=0;i<num;i++){
+			mode=IRCTADChan_GetModeChar(list[i]);
+			if( mode && !(strcmp(list[i], channel)) && !(*mode^IRCMODE_SECRET)){
+				/*get numero de usuarios*/
+				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
+				/*get topic /tema del canal*/
+				if((res=IRCTAD_GetTopic(list[i], &topic))!=IRC_OK){
+					syslog(LOG_ERR, "IRCServ: Error en Get_Topic %ld",
+						res);
+					return ERROR;
+				}
+				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
+					IRCNAME, get_nick(d->socket), list[i], num_users, topic);
+				/*Envio del mensaje*/
+				send(d->socket,streply,strlen(streply), 0);
+				
+			}
+		}
+	}
+	/*Mensaje de fin de lista*/
+	if( (res=IRCMsg_RplListEnd(&reply, IRCNAME, get_nick(d->socket)))!=IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplListEnd(): %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, strlen(reply), 0);
+	/*Liberar recursos usados*/
+	free(reply);
+	free(topic);
+	free(mode);
+	free(prefix);
+	free(channel);
+	free(target);
+	return OK;
+}
 
 /**
 *@brief Función que atiende al comando por defecto

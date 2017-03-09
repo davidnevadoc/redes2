@@ -17,6 +17,7 @@ void inicializaComandos(){
 	listaComandos[2] = user;
 	listaComandos[6] = quit;
 	listaComandos[8] = join;
+	listaComandos[12] = list;
 }
 
 
