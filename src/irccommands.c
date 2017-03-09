@@ -218,7 +218,8 @@ int list (data *d){
 		/*Bucle recorre canales*/
 		for(i=0;i<num;i++){
 			mode=IRCTADChan_GetModeChar(list[i]);
-			if( mode && !(*mode^IRCMODE_SECRET)){
+			if( !mode || ((long) *mode != IRCMODE_SECRET)){
+				syslog(LOG_ERR, "aqui se llega");
 				/*get numero de usuarios*/
 				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
 				/*get topic /tema del canal*/
@@ -238,7 +239,7 @@ int list (data *d){
 		/*Bucle recorre canales*/
 		for(i=0;i<num;i++){
 			mode=IRCTADChan_GetModeChar(list[i]);
-			if( mode && !(strcmp(list[i], channel)) && !(*mode^IRCMODE_SECRET)){
+			if( !mode || (!(strcmp(list[i], channel)) && ((long) *mode != IRCMODE_SECRET))){
 				/*get numero de usuarios*/
 				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
 				/*get topic /tema del canal*/
