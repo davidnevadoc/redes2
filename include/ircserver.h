@@ -21,6 +21,7 @@
 #include <unistd.h> 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 
 #define IRCNAME "valknutserver"
@@ -29,6 +30,8 @@
 #define USERLEN 16
 #define NICKLEN 10
 #define MAXUSERS 512
+
+#define SERV_NAME "nombre"
 
 #define OK 0
 #define ERROR -1

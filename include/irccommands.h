@@ -8,49 +8,66 @@
 #include "ircserver.h"
 /**
 *@brief Función que atiende al comando PASS
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-/*De momento solo muestra la contraseña introducida*/
 int pass(data* d);
 
 /**
 *@brief Función que atiende al comando NICK
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-//TODO Eviar mensaje al usuario informando del cambio si todo fue bien o de si hubo algun error
 int nick(data* d);
 
 /**
 *@brief Función que atiende al comando USER
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-/*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
 int user(data* d);
 
 
 /**
 *@brief Función que atiende al comando QUIT
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int quit(data* d);
 
 
 /**
 *@brief Función que atiende al comando JOIN
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int join(data* d);
 
+/**
+*@brief Función que atiende al comando LIST
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int list(data *d);
+
+/**
+*@brief Función que atiende al comando WHOIS
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int whois(data *d);
+
+/**
+*@brief Función que atiende al comando NAMES
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int names(data *d);
+
 /**
 *@brief Función que atiende al comando por defecto
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int comandoDefault(data* d);
 

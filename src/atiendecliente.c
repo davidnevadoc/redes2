@@ -1,6 +1,6 @@
 
 #include "../include/atiendecliente.h"
-/*Lista con los comandos disponibles,*/ /*TODO tiene que ser global?*/
+/*Lista con los comandos disponibles,*/ 
 int (*listaComandos[NUM_COMANDOS])(data *);
 
 /**
@@ -18,6 +18,8 @@ void inicializaComandos(){
 	listaComandos[6] = quit;
 	listaComandos[8] = join;
 	listaComandos[12] = list;
+	listaComandos[30] = whois;
+	listaComandos[11] = names;	
 }
 
 
@@ -41,7 +43,6 @@ void * atiende_cliente(data* d){
 	char mensaje[100];
 
 	inicializaComandos();
- 	/*TODO Aqui deberiamos hacer el pipeline*/
 	while (d->stop != 1){
 		
 		if ( (messg_size=recv(d->socket, buff, BUFF_SIZE, 0)) == -1){
@@ -66,7 +67,6 @@ void * atiende_cliente(data* d){
 		
 	}
 	/*Notificamos cierre de la conexión*/
-	sprintf(mensaje, "Cerrando conexión...\n");
 	send(d->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 	/*liberamos recursos*/
 	close(d->socket);

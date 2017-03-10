@@ -2,8 +2,8 @@
 
 /**
 *@brief Función que atiende al comando PASS
-*@param
-*@return
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 /*De momento solo muestra la contraseña introducida*/
 int pass(data* d){
@@ -20,14 +20,14 @@ int pass(data* d){
 	}
 
 	send(d->socket, ans, sizeof(char)*strlen(ans), 0);
-	return 0;
+	return OK;
 }
 
 
 /**
 *@brief Función que atiende al comando NICK
-*@param
-*@return
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 //TODO Especificar mas casos de error
 int nick(data* d){
@@ -39,7 +39,7 @@ int nick(data* d){
 	char streply[MAXREPLY]={0};
 	char *prefix = NULL, * nick = NULL, *msg = NULL;
 
-		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando NICK: %s", d->mensaje);
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando NICK: %s", d->mensaje);
 	if( (res = IRCParse_Nick (d->mensaje, &prefix, &nick, &msg) )!= IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCParse_Nick: %ld", res );
 		return ERROR;
@@ -79,10 +79,9 @@ int nick(data* d){
 
 /**
 *@brief Función que atiende al comando USER
-*@param
-*@return
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-/*long 	IRCParse_User (char *strin, char **prefix, char **user, char **modehost, char **serverother, char **realname)*/
 int user(data* d){	
 	/*Variable para el mensaje de respuesta al cliente*/
 	char *reply = NULL;
@@ -98,8 +97,7 @@ int user(data* d){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion user. IRCParse_User: %ld", res );
 		return ERROR;
 	}else{ 
-		switch(IRCTADUser_New (user, nick, realname, NULL,
-				serverother, d->IP, d->socket)){
+		switch(IRCTADUser_New (user, nick, realname, NULL,serverother, d->IP, d->socket)){
 			
 			case IRC_OK:
 				IRCMsg_RplWelcome ( &reply, IRCNAME, nick, nick, user, serverother);
@@ -133,17 +131,18 @@ int user(data* d){
 
 /**
 *@brief Función que atiende al comando QUIT
-*@param
-*@return
+ *@param d Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int quit(data* d){
-	char *prefix, *msg;
+	char *prefix = NULL, *msg = NULL, *nick = NULL;
 	long res = 0;
 	char mensaje[100];
+	char *reply = NULL;
 
 	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
 
-	res = IRCParse_Quit (d->mensaje, &prefix, &msg);//msg contiene el mensaje que escribe el user al irse?
+	res = IRCParse_Quit (d->mensaje, &prefix, &msg);
 	
 	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
 		syslog(LOG_ERR, "IRCServ: Error en el comando QUIT, %ld", res);
@@ -151,6 +150,13 @@ int quit(data* d){
 		send(d->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 		return ERROR;
 	}
+	if(msg == NULL){ //Enviamos como mensaje por defecto el nick
+		nick = get_nick(d->socket);
+		IRCMsg_Quit (&reply, prefix, nick);
+	}else{
+		IRCMsg_Quit (&reply, prefix, msg);
+	}
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	d->stop=1;
 	return OK;
 }
@@ -273,13 +279,97 @@ int list (data *d){
 }
 
 /**
+*@brief Función que atiende al comando WHOIS
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int whois(data *d){
+	char *prefix = NULL, *target = NULL, *maskarray = NULL;
+	long res = 0;
+	char *reply = NULL;
+	long id = 0;
+	char *user = NULL, *real = NULL, *host = NULL, *ip = NULL, *away = NULL;
+	long creationTS, actionTS, numberOfChannels = 0, mode = 0;
+	int socket = 0, i = 0;
+	char *nick = NULL;
+	char **channellist;
+	char array[500];
+
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando WHOIS: %s", d->mensaje);
+
+	res = IRCParse_Whois (d->mensaje, &prefix, &target, &maskarray);
+	if ( res != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de whois %ld", res);
+		return ERROR;
+	}
+	nick = get_nick(d->socket);
+	IRCTADUser_GetData (&id, &user, &maskarray, &real, &host, &ip, &socket, &creationTS, &actionTS, &away);
+
+	if(user == NULL){ //No se ha encontrado un user con ese nick
+		IRCMsg_ErrNoSuchNick(&reply, SERV_NAME, nick, maskarray);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	}else{
+		IRCMsg_RplWhoIsUser (&reply, SERV_NAME, nick, maskarray, user, host, real);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+		IRCMsg_RplWhoIsServer (&reply, SERV_NAME, nick, maskarray, SERV_NAME, "info");
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+		IRCTAD_ListChannelsOfUserArray (user, maskarray, &channellist, &numberOfChannels);
+		for(i=0; i<numberOfChannels;i++){
+			mode = IRCTAD_GetUserModeOnChannel(channellist[i], maskarray);
+			if(mode&IRCUMODE_OPERATOR){
+				strcat(array, "@");
+			}
+			strcat(array, channellist[i]);
+			strcat(array, " ");
+		}
+		IRCMsg_RplWhoIsChannels (&reply, SERV_NAME, nick, maskarray, array); //meto el array de canales formado manualmente porque no puto funcionaba si no!!!
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	}
+	IRCMsg_RplEndOfWhoIs(&reply, SERV_NAME, nick, maskarray);
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	return OK;
+}
+/**
+*@brief Función que atiende al comando NAMES
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int names(data* d){
+	char *prefix = NULL, *channel = NULL, *target = NULL;
+	char *reply = NULL, *list = NULL, *nick = NULL;
+	long res = 0, numberOfUsers = 0;
+	
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando NAMES: %s", d->mensaje);
+
+	res = IRCParse_Names (d->mensaje, &prefix, &channel, &target);
+	if (res != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de names %ld", res);
+		return ERROR;
+	}
+	nick = get_nick(d->socket);
+	IRCTAD_ListNicksOnChannel(channel, &list, &numberOfUsers);
+	IRCMsg_RplNamReply (&reply, SERV_NAME, nick, "a", channel, list); //TODO donde he puesto una "a" se supone que hay que poner type, pero no se a que se refuere
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	IRCMsg_RplEndOfNames (&reply, SERV_NAME, nick, channel);
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	
+
+	return OK;
+}
+
+
+
+
+/**
 *@brief Función que atiende al comando por defecto
-*@param
-*@return
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int comandoDefault(data* d){
 	char ans[100];
 	sprintf(ans, "Este comando no está implementado \n");
 	send(d->socket, ans, sizeof(char)*strlen(ans), 0);
-	return 0;
+	return OK;
 }
