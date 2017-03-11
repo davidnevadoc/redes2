@@ -1,5 +1,7 @@
 #include "../include/irccommands.h"
 
+#include <redes2/irc.h>
+
 /**
 *@brief Función que atiende al comando PASS
  *@param d Estructura de datos con la informacion del hilo
@@ -57,7 +59,7 @@ int nick(data* d){
 
 		case IRCERR_NICKUSED:
 			syslog(LOG_ERR,"IRCServ: Error en nick: %ld", res);
-			IRCMsg_ErrNickNameInUse(&reply, IRCNAME, get_nick(d->socket), nick);
+			IRCMsg_ErrNickNameInUse(&reply, SERV_NAME, get_nick(d->socket), nick);
 			send(d->socket, reply, sizeof(char)*strlen(streply), 0);
 			free(reply);
 			break;
@@ -100,13 +102,13 @@ int user(data* d){
 		switch(IRCTADUser_New (user, nick, realname, NULL,serverother, d->IP, d->socket)){
 			
 			case IRC_OK:
-				IRCMsg_RplWelcome ( &reply, IRCNAME, nick, nick, user, serverother);
+				IRCMsg_RplWelcome ( &reply, SERV_NAME, nick, nick, user, serverother);
 				send(d->socket, reply, strlen(reply), 0);
 				free(reply);
 				/*Actualizacion de la estructura local*/
 				set_user(d->socket, user);
-				syslog(LOG_INFO, "IRCServ: Nuevo usuario registrado: %s %s %s",
-					user, realname, serverother);
+				syslog(LOG_INFO, "IRCServ: Nuevo usuario registrado: %s %s %s %d",
+					user, realname, serverother, d->socket);
 				break;
 			case IRCERR_NICKUSED:
 				syslog(LOG_INFO, "IRCServ: El nick %s ya está registrado", nick);
@@ -156,8 +158,11 @@ int quit(data* d){
 	}else{
 		IRCMsg_Quit (&reply, prefix, msg);
 	}
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	set_user(d->socket, NULL);
+	set_nick(d->socket, NULL);
 	d->stop=1;
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	
 	return OK;
 }
 /**
@@ -179,8 +184,7 @@ int join(data* d){
 		if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key )) == IRC_OK){
 			syslog(LOG_INFO, "Usuario %s, se unio al canal %s",
 			 get_nick(d->socket), channel);
-			IRC_ComplexUser1459 (&prefix_s, get_nick(d->socket),
-			  get_user(d->socket),  get_host(&(d->socket)), NULL);
+			ComplexUser_bySocket(&prefix_s, &(d->socket));
 			if ( IRCMsg_Join(&reply, prefix_s, NULL, key, channel) == IRC_OK){
 				 //en el canal se pone NULL y el canal se manda como mensaje
 				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
@@ -235,7 +239,7 @@ int list (data *d){
 					return ERROR;
 				}
 				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
-					IRCNAME, get_nick(d->socket), list[i], num_users, topic);
+					SERV_NAME, get_nick(d->socket), list[i], num_users, topic);
 				/*Envio del mensaje*/
 				send(d->socket,streply,strlen(streply), 0);
 			}	
@@ -255,7 +259,7 @@ int list (data *d){
 					return ERROR;
 				}
 				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
-					IRCNAME, get_nick(d->socket), list[i], num_users, topic);
+					SERV_NAME, get_nick(d->socket), list[i], num_users, topic);
 				/*Envio del mensaje*/
 				send(d->socket,streply,strlen(streply), 0);
 				
@@ -263,7 +267,7 @@ int list (data *d){
 		}
 	}
 	/*Mensaje de fin de lista*/
-	if( (res=IRCMsg_RplListEnd(&reply, IRCNAME, get_nick(d->socket)))!=IRC_OK){
+	if( (res=IRCMsg_RplListEnd(&reply, SERV_NAME, get_nick(d->socket)))!=IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplListEnd(): %ld", res);
 		return ERROR;
 	}
@@ -350,7 +354,7 @@ int names(data* d){
 	}
 	nick = get_nick(d->socket);
 	IRCTAD_ListNicksOnChannel(channel, &list, &numberOfUsers);
-	IRCMsg_RplNamReply (&reply, SERV_NAME, nick, "a", channel, list); //TODO donde he puesto una "a" se supone que hay que poner type, pero no se a que se refuere
+	IRCMsg_RplNamReply (&reply, SERV_NAME, nick, "a", channel, list); //TODO donde he puesto una "a" se supone que hay que poner type, pero no se a que se refuere // ya lo mirare pero si no se que poner yo soy mas de poner NULL
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	IRCMsg_RplEndOfNames (&reply, SERV_NAME, nick, channel);
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
@@ -358,10 +362,132 @@ int names(data* d){
 
 	return OK;
 }
+/**
+*@brief Función que atiende al comando PRIVMSG
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int privmsg(data *d){
+	/*Inicializacion de variables*/
+	long res=0, nlist=0;
+	int sockdest=0, i=0;
+	char * msgtarget, *msg, *prefix, *prefix_s, *reply, *away, *rplaway, **list=NULL;
+	char streply[MAXREPLY]={0};
+	msgtarget=msg=prefix=prefix_s=reply=away=rplaway=NULL;
+	/*Mensaje informativo para debugging*/
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando privmsg: %s", d->mensaje);
+	/*Parseo del comando*/
+	if( (res=IRCParse_Privmsg(d->mensaje, &prefix, &msgtarget, &msg))!=IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de PRIVMSG %ld", res);
+		return ERROR;
+	}
+	/**/
+	if(msgtarget){
+		/*Obtenemos el prefijo para enviar*/
+		ComplexUser_bySocket(&prefix_s, &(d->socket));
+		/*Mensaje para el usuario*/
+		IRCMsg_Privmsg (&reply, prefix_s, msgtarget, msg);
+		if(IRCTAD_ListNicksOnChannelArray(msgtarget, &list, &nlist)!=IRCERR_NOVALIDCHANNEL){
+			for(i=0;i<nlist;i++){
+				sockdest=get_sock_by_nick(list[i]);
+				if(sockdest!=d->socket){
+					send(sockdest, reply,  sizeof(char)*strlen(reply), 0);
+				}
+				free(list[i]);
+			}
+		}
+		else if((sockdest=get_sock_by_nick(msgtarget))!= 0){
+			res = IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away);
+			if(res!=IRC_OK){
+				syslog(LOG_ERR, "IRCServ: Error en GetAway %ld" ,res);
+				IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
+				return ERROR;
+			}
+			if(away){
+				IRCMsg_RplAway(&rplaway, SERV_NAME, get_nick(d->socket), msgtarget, away);
+				send(d->socket, rplaway, sizeof(char)*strlen(rplaway), 0);
+				free(rplaway);
+				free(away);
+			}
+			syslog(LOG_INFO,"IRCServ: Mensaje enviado a %d", sockdest);
+			send(sockdest, reply,  sizeof(char)*strlen(reply), 0);
 
+		}else{
+			syslog(LOG_INFO, "IRCServ: No se encontro el nick de destino");
+			free(reply);
+			IRCMsg_ErrNoSuchNick(&reply, prefix_s, get_nick(d->socket), msgtarget);
+			send(d->socket, reply,  sizeof(char)*strlen(reply), 0);
+		
+		}
+	/*Si no hay destino -> faltan parametros*/
+	}else{
+		syslog(LOG_INFO, "IRCServ: No se introdujo destino");
+		sprintf(streply, ":%s 461 %s %s :Needed more parameters\r\n", SERV_NAME,
+		get_nick(d->socket), "PRIVMSG");
+		send(d->socket, streply,  sizeof(char)*strlen(streply), 0);
+	}
+	IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
+	
+	return OK;
+}
+/**
+*@brief Función que atiende al comando PING
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int ping(data * d){
+	char * prefix, *server, *server2, *msg, *reply, * prefix_s;
+	long res=0;
+	prefix=prefix_s=server=server2=msg=reply=NULL;
+	if((res=IRCParse_Ping(d->mensaje, &prefix, &server, &server2, &msg))!=IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de PING %ld", res);
+		return ERROR;
+	}
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	if((res=IRCMsg_Pong (&reply, SERV_NAME , server, server2, server?server:""))!=IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Pong %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
+	IRC_MFree(5, server, server2, prefix, msg, reply, prefix_s);
+	return OK;
+}
+int pong(data *d){
+	return OK;
+}
 
-
-
+int part(data *d){
+	char * prefix, *channel, *msg, *reply, *prefix_s;
+	char **list=NULL;
+	char streply[MAXREPLY]={0};
+	long res=0, nlist=0;
+	int i=0, sockdest =0;
+	syslog(LOG_INFO, "IRCServ: Se ejecuta el comando PART: %s", d->mensaje);
+	if((res=IRCParse_Part(d->mensaje, &prefix, &channel, &msg))!=IRC_OK){	
+		syslog(LOG_ERR, "IRCServ: Error al parsear PART %ld" ,res);
+		return ERROR;
+	}
+	if((res=IRCTAD_Part(channel, get_nick(d->socket)))==IRC_OK){
+		syslog(LOG_INFO, "IRCServ: El usuario %s salio del canal %s", get_nick(d->socket), channel);
+		ComplexUser_bySocket(&prefix_s, &(d->socket));
+		IRCMsg_Part(&reply, prefix_s, channel, msg);
+		send(d->socket, reply, sizeof(char)* strlen(reply), 0);
+		IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
+		for(i=0;i<nlist;i++){
+			sockdest=get_sock_by_nick(list[i]);
+			if(sockdest!=d->socket){
+				sprintf(streply, ":%s %s has quit",SERV_NAME, get_nick(d->socket));
+				send(sockdest, streply, sizeof(char)*strlen(reply), 0);
+			}
+			free(list[i]);
+		}
+	}else{
+		syslog(LOG_INFO, "IRCServ: Error en IRCTAD_Part %ld",res);
+		//TODO Mensajes de error
+	}
+	IRC_MFree(6, prefix, channel, msg, reply, prefix_s, list);
+	return OK;
+}
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo

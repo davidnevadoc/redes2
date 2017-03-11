@@ -17,9 +17,14 @@ void inicializaComandos(){
 	listaComandos[2] = user;
 	listaComandos[6] = quit;
 	listaComandos[8] = join;
+	listaComandos[9] = part;
 	listaComandos[12] = list;
 	listaComandos[30] = whois;
-	listaComandos[11] = names;	
+	listaComandos[11] = names;
+	listaComandos[15] = privmsg;
+	listaComandos[33] = ping;
+	listaComandos[34] = pong;
+		
 }
 
 
@@ -40,7 +45,7 @@ void * atiende_cliente(data* d){
 	/*Codigo del comando recibido*/
 	long command_code = 0;
 
-	char mensaje[100];
+
 
 	inicializaComandos();
 	while (d->stop != 1){
@@ -66,8 +71,8 @@ void * atiende_cliente(data* d){
 		}
 		
 	}
-	/*Notificamos cierre de la conexión*/
-	send(d->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
+
+	syslog(LOG_INFO, "IRCServ: Se cerro la conexion %d", d->socket);
 	/*liberamos recursos*/
 	close(d->socket);
 	free_data(d);

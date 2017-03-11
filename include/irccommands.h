@@ -64,6 +64,10 @@ int whois(data *d);
 */
 int names(data *d);
 
+int privmsg(data *d);
+int ping(data *d);
+int pong(data *d);
+int part(data *d);
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo

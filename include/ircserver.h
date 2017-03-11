@@ -24,14 +24,12 @@
 #include <pthread.h>
 
 
-#define IRCNAME "valknutserver"
+#define SERV_NAME "valknutserver"
 
 /*TODO Revisar poniendo datos del RFC*/
 #define USERLEN 16
 #define NICKLEN 10
 #define MAXUSERS 512
-
-#define SERV_NAME "nombre"
 
 #define OK 0
 #define ERROR -1
@@ -113,5 +111,6 @@ char * get_user(int sockfd);
  */
 void free_all(void);
 char * get_host(int * sockfd);
+long ComplexUser_bySocket(char ** prefix, int  * psocket);
 #include "utilities.h"
 #endif

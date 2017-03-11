@@ -10,6 +10,8 @@
 
 #include "../include/ircserver.h"
 
+/*El primer socket asignable*/
+#define START 3
 /*Mutex para el control de acceso a los arrays*/
 pthread_mutex_t users_mutex;
 pthread_mutex_t nicks_mutex;
@@ -129,8 +131,8 @@ int get_sock_by_nick(char * nick){
 	int i;
 	if(!nick) return NULL_PARAM;
 	pthread_mutex_lock(&nicks_mutex);
-	for(i=0;i<MAXUSERS;i++){
-		if(nicks[i] && strcpy(nicks[i], nick)){
+	for(i=START;i<MAXUSERS;i++){
+		if(nicks[i] && !(strcmp(nicks[i], nick))){
 		pthread_mutex_unlock(&nicks_mutex);
 		return i;
 		}
@@ -153,8 +155,8 @@ int get_sock_by_user(char * user){
 	int i;
 	if(!user) return NULL_PARAM;
 	pthread_mutex_lock(&users_mutex);
-	for(i=0;i<MAXUSERS;i++){
-		if(users[i] && strcpy(users[i], user)){
+	for(i=START;i<MAXUSERS;i++){
+		if(users[i] && !(strcmp(users[i], user))){
 		pthread_mutex_unlock(&users_mutex);
 		return i;
 		}
@@ -218,7 +220,7 @@ char * get_host(int * sockfd){
 	res=IRCTADUser_GetData (&id, &user, &nick, &real, &host, &IP, sockfd, &creationTS, &actionTS, &away);
 	switch (res){
 		case IRC_OK:
-			//IRC_MFree(5, user, nick,*real, IP, away);
+			IRC_MFree(5, user, nick, real, IP, away);
 			return host;
 		case IRCERR_NOENOUGHMEMORY:
 			syslog(LOG_ERR,"IRCServ: Error en gethost(): memoria insuficiente");
@@ -230,4 +232,9 @@ char * get_host(int * sockfd){
 
 }
 
+long ComplexUser_bySocket(char ** prefix, int  * psocket){
+	return IRC_ComplexUser1459 (prefix, get_nick(*psocket),
+		 get_user(*psocket),  get_host(psocket), NULL);
+
+}
 
