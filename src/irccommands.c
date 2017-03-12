@@ -180,30 +180,28 @@ int quit(data* d){
 
 int join(data* d){
 	
-	char *prefix = NULL,*prefix_s= NULL, *msg = NULL, *channel = NULL;
-	char *key = NULL, *usermode =NULL;
-	char *reply =NULL;
+	char *prefix, *prefix_s, *msg, *channel, *key, *usermode, *reply;
 	long res = 0;
+	prefix=prefix_s=msg=channel=key=usermode=reply=NULL;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando JOIN: %s", d->mensaje);
 
-	if ( (res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg)) == IRC_OK){
-		if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key )) == IRC_OK){
-			syslog(LOG_INFO, "Usuario %s, se unio al canal %s",
-			 get_nick(d->socket), channel);
-			ComplexUser_bySocket(&prefix_s, &(d->socket));
-			if ( IRCMsg_Join(&reply, prefix_s, NULL, key, channel) == IRC_OK){
-				 //en el canal se pone NULL y el canal se manda como mensaje
-				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-				free(prefix_s);
-				return OK;
-			} 
-			free(prefix_s);
-		}
-		//TODO hacer mensajes de error para enviar	
+	if ( (res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de JOIN, %ld", res);
+		return ERROR;
 	}
-	syslog(LOG_ERR, "IRCServ: Error en el comando JOIN, %ld", res);
-	return ERROR;
+	if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_Join, %ld", res);
+		return ERROR;
+	}
+	syslog(LOG_INFO, "Usuario %s, se unio al canal %s", get_nick(d->socket), channel);
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	if ( IRCMsg_Join(&reply, prefix_s, msg, key, channel) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Join, %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	return OK;
 
 }
 /**
@@ -295,38 +293,43 @@ int list (data *d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int whois(data *d){
-	char *prefix = NULL, *target = NULL, *maskarray = NULL;
-	long res = 0;
-	char *reply = NULL;
-	long id = 0;
-	char *user = NULL, *real = NULL, *host = NULL, *ip = NULL, *away = NULL;
-	long creationTS, actionTS, numberOfChannels = 0, mode = 0;
+	char *prefix, *target, *maskarray, *user, *real, *host, *ip, *away, *reply;
 	int socket = 0, i = 0;
-	char *nick = NULL;
-	char **channellist;
-	char array[500];
+	long creationTS, actionTS, numberOfChannels, mode, id, res;
+	char **channellist = NULL;
+	char array[500] = {0};
 
+	creationTS=actionTS=numberOfChannels=mode=id=res=0;
+	prefix=target=maskarray=user=real=host=ip=away=reply=NULL;
+	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando WHOIS: %s", d->mensaje);
-
+	/*Parseo del mensaje*/
 	res = IRCParse_Whois (d->mensaje, &prefix, &target, &maskarray);
 	if ( res != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de whois %ld", res);
 		return ERROR;
 	}
-	nick = get_nick(d->socket);
+
 	IRCTADUser_GetData (&id, &user, &maskarray, &real, &host, &ip, &socket, &creationTS, &actionTS, &away);
 
 	if(user == NULL){ //No se ha encontrado un user con ese nick
-		IRCMsg_ErrNoSuchNick(&reply, SERV_NAME, nick, maskarray);
+		IRCMsg_ErrNoSuchNick(&reply, SERV_NAME, get_nick(d->socket), maskarray);
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	}else{
-		IRCMsg_RplWhoIsUser (&reply, SERV_NAME, nick, maskarray, user, host, real);
+		if((res = IRCMsg_RplWhoIsUser (&reply, SERV_NAME, get_nick(d->socket), maskarray, user, host, real)) != IRC_OK){
+			syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplWhoIsUser(): %ld", res);
+			return ERROR;
+		}
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
-		IRCMsg_RplWhoIsServer (&reply, SERV_NAME, nick, maskarray, SERV_NAME, "info");
+		if((res = IRCMsg_RplWhoIsServer (&reply, SERV_NAME, get_nick(d->socket), maskarray, SERV_NAME, "info")) != IRC_OK){
+			syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplWhoIsServer(): %ld", res);
+			return ERROR;
+		}
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
 		IRCTAD_ListChannelsOfUserArray (user, maskarray, &channellist, &numberOfChannels);
+		
 		for(i=0; i<numberOfChannels;i++){
 			mode = IRCTAD_GetUserModeOnChannel(channellist[i], maskarray);
 			if(mode&IRCUMODE_OPERATOR){
@@ -335,11 +338,20 @@ int whois(data *d){
 			strcat(array, channellist[i]);
 			strcat(array, " ");
 		}
-		IRCMsg_RplWhoIsChannels (&reply, SERV_NAME, nick, maskarray, array); //meto el array de canales formado manualmente porque no puto funcionaba si no!!!
+		if((res = IRCMsg_RplWhoIsChannels (&reply, SERV_NAME, get_nick(d->socket), maskarray, array)) != IRC_OK){
+			syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplWhoIsChannels(): %ld", res);
+			return ERROR;
+		}
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	}
-	IRCMsg_RplEndOfWhoIs(&reply, SERV_NAME, nick, maskarray);
+
+	if ((res = IRCMsg_RplEndOfWhoIs(&reply, SERV_NAME, get_nick(d->socket), maskarray)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplEndOfWhoIs(): %ld", res);
+		return ERROR;
+	}
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	/*Liberamos recursos*/
+	IRC_MFree(9, reply, prefix, target, maskarray, real, host, ip, away, channellist);
 	return OK;
 }
 /**
@@ -348,25 +360,35 @@ int whois(data *d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int names(data* d){
-	char *prefix = NULL, *channel = NULL, *target = NULL;
-	char *reply = NULL, *list = NULL, *nick = NULL;
+	char *prefix, *channel, *target, *reply, *list;
 	long res = 0, numberOfUsers = 0;
+	prefix=channel=target=reply=list=NULL;
 	
+	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando NAMES: %s", d->mensaje);
 
+	/*Parseo del mensaje*/
 	res = IRCParse_Names (d->mensaje, &prefix, &channel, &target);
 	if (res != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de names %ld", res);
 		return ERROR;
 	}
-	nick = get_nick(d->socket);
 	IRCTAD_ListNicksOnChannel(channel, &list, &numberOfUsers);
-	IRCMsg_RplNamReply (&reply, SERV_NAME, nick, "a", channel, list); //TODO donde he puesto una "a" se supone que hay que poner type, pero no se a que se refuere // ya lo mirare pero si no se que poner yo soy mas de poner NULL
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-	IRCMsg_RplEndOfNames (&reply, SERV_NAME, nick, channel);
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-	
 
+	if( (res = IRCMsg_RplNamReply (&reply, SERV_NAME, get_nick(d->socket), "a", channel, list)) != IRC_OK){//TODO si pongo null peta, asi que dejo a.
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplNamReply(): %ld", res);
+		return ERROR;
+	} 
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+	if( (res = IRCMsg_RplEndOfNames (&reply, SERV_NAME, get_nick(d->socket), channel)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplEndOfNames(): %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+	/*Liberamos recursos*/
+	//IRC_MFree(5, prefix, channel, target, reply, list);
 	return OK;
 }
 /**
@@ -456,7 +478,7 @@ int ping(data * d){
 		return ERROR;
 	}
 	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
-	IRC_MFree(5, server, server2, prefix, msg, reply, prefix_s);
+	IRC_MFree(6, server, server2, prefix, msg, reply, prefix_s);
 	return OK;
 }
 int pong(data *d){
@@ -495,6 +517,77 @@ int part(data *d){
 	IRC_MFree(6, prefix, channel, msg, reply, prefix_s, list);
 	return OK;
 }
+
+/**
+*@brief Función que atiende al comando TOPIC
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int topic(data* d){
+	char *prefix, *channel , *topic, *reply;
+	long res = 0;
+	prefix=channel=topic=reply=NULL;
+	/*Log de ejecucion del comando*/
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando TOPIC: %s", d->mensaje);
+
+	if( (res = IRCParse_Topic (d->mensaje, &prefix, &channel, &topic)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de TOPIC %ld", res);
+		return ERROR;
+	}
+	if(topic == NULL){
+		IRCTAD_GetTopic (channel, &topic);
+		IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		IRC_MFree(4, prefix, channel, topic, reply);
+		return OK;
+	}
+	if((res = IRCTAD_SetTopic (channel, get_nick(d->socket), topic)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_SetTopic() %ld", res);
+		return ERROR;
+	}
+	/*Creacion de mensaje cuando se cambia el topic*/
+	if((res = IRCMsg_Topic (&reply, SERV_NAME, channel, topic)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Topic() %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	/*Liberamos recursos*/
+	IRC_MFree(4, prefix, channel, topic, reply);
+	return OK;
+}
+
+/**
+*@brief Función que atiende al comando KICK
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int kick(data* d){
+	char *prefix, *channel , *user, *comment, *reply;
+	long res = 0;
+	prefix=channel=user=comment=reply=NULL;
+	/*Log de ejecucion del comando*/
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando KICK: %s", d->mensaje);
+
+	if( (res = IRCParse_Kick (d->mensaje, &prefix, &channel, &user, &comment)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en el parseo de KICK %ld", res);
+		return ERROR;
+	} 
+	/*Veo si el usuario es operador del canal, entonces no se le puede expulsar*/
+	//IRCTAD_GetUserModeOnChannel (char *channel, char *nick)
+	if ((res = IRCTAD_KickUserFromChannel (channel,user)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
+		return ERROR;
+	} 
+
+	if ((res = IRCMsg_Kick (&reply, prefix, channel, user, comment)) != IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
+		return ERROR;
+	} 
+
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	return OK;
+}
+
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo

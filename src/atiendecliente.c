@@ -18,7 +18,9 @@ void inicializaComandos(){
 	listaComandos[6] = quit;
 	listaComandos[8] = join;
 	listaComandos[9] = part;
+	listaComandos[10] = topic;
 	listaComandos[12] = list;
+	listaComandos[14] = kick;
 	listaComandos[30] = whois;
 	listaComandos[11] = names;
 	listaComandos[15] = privmsg;
@@ -46,7 +48,6 @@ void * atiende_cliente(data* d){
 	long command_code = 0;
 
 
-
 	inicializaComandos();
 	while (d->stop != 1){
 		
@@ -63,7 +64,7 @@ void * atiende_cliente(data* d){
 			command_code = IRC_CommandQuery(command);
 			d->mensaje=command;
 			if(command_code < 0 || command_code > NUM_COMANDOS){
-				syslog(LOG_ERR, "IRCServ: Error al leer el comando"
+				syslog(LOG_ERR, "IRCServ: Error al leer el comando "
 					 "Error: %ld ", command_code);
 			} else { /*Llamo a la funcion del comando  correspondiente*/
 				(*listaComandos[command_code - 1])(d);

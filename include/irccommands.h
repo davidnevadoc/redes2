@@ -68,6 +68,21 @@ int privmsg(data *d);
 int ping(data *d);
 int pong(data *d);
 int part(data *d);
+
+/**
+*@brief Función que atiende al comando TOPIC
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int topic(data* d);
+
+/**
+*@brief Función que atiende al comando KICK
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int kick(data* d);
+
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo

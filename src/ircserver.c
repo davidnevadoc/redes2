@@ -220,7 +220,7 @@ char * get_host(int * sockfd){
 	res=IRCTADUser_GetData (&id, &user, &nick, &real, &host, &IP, sockfd, &creationTS, &actionTS, &away);
 	switch (res){
 		case IRC_OK:
-			IRC_MFree(5, user, nick, real, IP, away);
+			//IRC_MFree(5, user, nick, real, IP, away);
 			return host;
 		case IRCERR_NOENOUGHMEMORY:
 			syslog(LOG_ERR,"IRCServ: Error en gethost(): memoria insuficiente");
