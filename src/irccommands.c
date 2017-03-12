@@ -51,7 +51,6 @@ int nick(data* d){
 				NULL, nick, NULL)){
 		
 		case IRC_OK:
-			syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCTADUserSet: %ld", res );
 			sprintf( streply, ":%s NICK :%s\r\n", prefix , nick);
 			send(d->socket, streply, sizeof(char)*strlen(streply), 0);
 			set_nick(d->socket, nick);
@@ -64,7 +63,7 @@ int nick(data* d){
 			free(reply);
 			break;
 		default:
-			syslog(LOG_ERR,"IRCServ: Error en nick: %ld", res);
+			syslog(LOG_ERR, "IRCServ: Error en la funcion nick. IRCTADUserSet: %ld", res );
 			return ERROR;
 
 		}
@@ -93,7 +92,7 @@ int user(data* d){
 	char *prefix, *user, *modehost, *serverother, *realname, *nick;
 	prefix = user = modehost = serverother = realname = NULL;
 	nick = get_nick(d->socket);
-		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando USER: %s", d->mensaje);
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando USER: %s", d->mensaje);
 
 	if((res = IRCParse_User (d->mensaje, &prefix, &user, &modehost, &serverother, &realname)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en la funcion user. IRCParse_User: %ld", res );
@@ -137,39 +136,41 @@ int user(data* d){
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int quit(data* d){
-	char *prefix = NULL, *msg = NULL, *nick = NULL;
+	char *prefix = NULL, *msg = NULL, *nick = NULL, *prefix_s=NULL;
 	long res = 0;
-	char mensaje[100];
 	char *reply = NULL;
 
-	syslog(LOG_INFO,"Se ha leido %s", d->mensaje);
-
-	res = IRCParse_Quit (d->mensaje, &prefix, &msg);
-	
-	if(res == IRCERR_NOSTRING || res == IRCERR_ERRONEUSCOMMAND){
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando QUIT %s", d->mensaje);
+	if((res = IRCParse_Quit (d->mensaje, &prefix, &msg) )!=IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el comando QUIT, %ld", res);
-		sprintf(mensaje, "Error en el comando QUIT\n");
-		send(d->socket, mensaje, sizeof(char)*strlen(mensaje), 0);
 		return ERROR;
-	}
+	}/*TODO
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
 	if(msg == NULL){ //Enviamos como mensaje por defecto el nick
 		nick = get_nick(d->socket);
-		if (IRCMsg_Quit (&reply, prefix, nick)!=IRC_OK ){
+		if (IRCMsg_Quit (&reply, prefix_s, nick)!=IRC_OK ){
 			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
 			return ERROR;
 		}
 	}else{
-		if(IRCMsg_Quit (&reply, prefix, msg)){
+		if(IRCMsg_Quit (&reply, prefix_s, msg)){
 			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
 			return ERROR;
 		}
 	}
+	*/
+	IRCTAD_Quit(get_nick(d->socket));
+	free(reply);
+	IRCMsg_Error(&reply, SERV_NAME, "Terminating");
+	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
 	set_user(d->socket, NULL);
 	set_nick(d->socket, NULL);
-	d->stop=1;
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	free(reply);
 	free(prefix);
+	free(msg);
+	free(prefix_s);
+	d->stop=1;
 	return OK;
 }
 /**
@@ -244,7 +245,7 @@ int list (data *d){
 					return ERROR;
 				}
 				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
-					SERV_NAME, get_nick(d->socket), list[i], num_users, topic);
+					SERV_NAME, get_nick(d->socket), list[i], num_users, topic?topic:"");
 				/*Envio del mensaje*/
 				send(d->socket,streply,strlen(streply), 0);
 			}	
@@ -264,7 +265,7 @@ int list (data *d){
 					return ERROR;
 				}
 				sprintf(streply, ":%s 322 %s %s %d %s \r\n",
-					SERV_NAME, get_nick(d->socket), list[i], num_users, topic);
+					SERV_NAME, get_nick(d->socket), list[i], num_users, topic?topic:"");
 				/*Envio del mensaje*/
 				send(d->socket,streply,strlen(streply), 0);
 				
@@ -350,8 +351,10 @@ int whois(data *d){
 		return ERROR;
 	}
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	syslog(LOG_ERR, "IRCServ: Termina WHOIS");
 	/*Liberamos recursos*/
-	IRC_MFree(9, reply, prefix, target, maskarray, real, host, ip, away, channellist);
+	//IRC_MFree(9, reply, prefix, target, maskarray, real, host, ip, away, channellist);
+	syslog(LOG_ERR, "IRCServ: Termina WHOIS");
 	return OK;
 }
 /**
@@ -389,6 +392,11 @@ int names(data* d){
 
 	/*Liberamos recursos*/
 	//IRC_MFree(5, prefix, channel, target, reply, list);
+	free(channel);
+	free(target);
+	free(prefix);
+	free(list);
+	free(reply);
 	return OK;
 }
 /**
@@ -455,8 +463,13 @@ int privmsg(data *d){
 		get_nick(d->socket), "PRIVMSG");
 		send(d->socket, streply,  sizeof(char)*strlen(streply), 0);
 	}
-	IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
-	
+	//IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
+	free(msgtarget);
+	free(prefix_s);
+	free(prefix);
+	free(msg);
+	free(reply);
+	free(list);
 	return OK;
 }
 /**
@@ -468,6 +481,7 @@ int ping(data * d){
 	char * prefix, *server, *server2, *msg, *reply, * prefix_s;
 	long res=0;
 	prefix=prefix_s=server=server2=msg=reply=NULL;
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando ping: %s", d->mensaje);
 	if((res=IRCParse_Ping(d->mensaje, &prefix, &server, &server2, &msg))!=IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de PING %ld", res);
 		return ERROR;
@@ -478,7 +492,13 @@ int ping(data * d){
 		return ERROR;
 	}
 	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
-	IRC_MFree(6, server, server2, prefix, msg, reply, prefix_s);
+	//IRC_MFree(6, server, server2, prefix, msg, reply, prefix_s);
+	free(server);
+	free(server2);
+	free(prefix);
+	free(msg);
+	free(reply);
+	free(prefix_s);
 	return OK;
 }
 int pong(data *d){
@@ -491,6 +511,7 @@ int part(data *d){
 	char streply[MAXREPLY]={0};
 	long res=0, nlist=0;
 	int i=0, sockdest =0;
+	prefix=channel=msg=reply=prefix_s=NULL;
 	syslog(LOG_INFO, "IRCServ: Se ejecuta el comando PART: %s", d->mensaje);
 	if((res=IRCParse_Part(d->mensaje, &prefix, &channel, &msg))!=IRC_OK){	
 		syslog(LOG_ERR, "IRCServ: Error al parsear PART %ld" ,res);
@@ -514,7 +535,7 @@ int part(data *d){
 		syslog(LOG_INFO, "IRCServ: Error en IRCTAD_Part %ld",res);
 		//TODO Mensajes de error
 	}
-	IRC_MFree(6, prefix, channel, msg, reply, prefix_s, list);
+	//IRC_MFree(6, prefix, channel, msg, reply, prefix_s, list);
 	return OK;
 }
 
@@ -526,6 +547,7 @@ int part(data *d){
 int topic(data* d){
 	char *prefix, *channel , *topic, *reply;
 	long res = 0;
+	char streply[MAXREPLY]={0};
 	prefix=channel=topic=reply=NULL;
 	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando TOPIC: %s", d->mensaje);
@@ -534,25 +556,41 @@ int topic(data* d){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de TOPIC %ld", res);
 		return ERROR;
 	}
+	if(!channel){
+		syslog(LOG_INFO, "IRCServ: Canal no especificado TOPIC");
+		sprintf(streply, ":%s 461 %s %s :Needed more parameters\r\n", SERV_NAME,
+		get_nick(d->socket), "TOPIC");
+		send(d->socket, streply,  sizeof(char)*strlen(streply), 0);
+		//IRC_MFree(4, prefix, channel, topic, reply);
+		return OK;
+	}
 	if(topic == NULL){
-		IRCTAD_GetTopic (channel, &topic);
-		IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
+		if(IRCTAD_GetTopic (channel, &topic)==IRC_OK){
+			IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
+		} else {
+			IRCMsg_RplNoTopic (&reply, SERV_NAME, get_nick(d->socket), channel);
+		}
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-		IRC_MFree(4, prefix, channel, topic, reply);
+		//IRC_MFree(4, prefix, channel, topic, reply);
 		return OK;
 	}
 	if((res = IRCTAD_SetTopic (channel, get_nick(d->socket), topic)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_SetTopic() %ld", res);
+		//TODO falta liberar
 		return ERROR;
 	}
 	/*Creacion de mensaje cuando se cambia el topic*/
 	if((res = IRCMsg_Topic (&reply, SERV_NAME, channel, topic)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Topic() %ld", res);
+		//TODO falta liberar
 		return ERROR;
 	}
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	/*Liberamos recursos*/
-	IRC_MFree(4, prefix, channel, topic, reply);
+	free(prefix);
+	free(topic);
+	free(reply);
+	free(channel);
 	return OK;
 }
 
@@ -594,8 +632,6 @@ int kick(data* d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int comandoDefault(data* d){
-	char ans[100];
-	sprintf(ans, "Este comando no está implementado \n");
-	send(d->socket, ans, sizeof(char)*strlen(ans), 0);
+	
 	return OK;
 }

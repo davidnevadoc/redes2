@@ -63,11 +63,13 @@ void * atiende_cliente(data* d){
 			command_q=IRC_UnPipelineCommands (command_q , &command);
 			command_code = IRC_CommandQuery(command);
 			d->mensaje=command;
-			if(command_code < 0 || command_code > NUM_COMANDOS){
-				syslog(LOG_ERR, "IRCServ: Error al leer el comando "
-					 "Error: %ld ", command_code);
-			} else { /*Llamo a la funcion del comando  correspondiente*/
-				(*listaComandos[command_code - 1])(d);
+			if(command){
+				if(command_code < 0 || command_code > NUM_COMANDOS){
+					syslog(LOG_ERR, "IRCServ: Error al leer el comando %s"
+						 "Error: %ld ", command, command_code);
+				} else { /*Llamo a la funcion del comando  correspondiente*/
+					(*listaComandos[command_code - 1])(d);
+				}
 			}
 		}
 		

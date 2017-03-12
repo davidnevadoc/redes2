@@ -28,6 +28,7 @@ data * data_init(int connfd){
 	d->socket=connfd;
 	d->IP=NULL;
 	d->mensaje =NULL;
+	d->stop=0;
 	return d;
 
 

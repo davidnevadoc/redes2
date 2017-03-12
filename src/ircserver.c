@@ -60,7 +60,7 @@ int init_var(void){
 int set_user(int sockfd, char * user){
 	if (sockfd<0 || sockfd > MAXUSERS) return ERROR;
 	pthread_mutex_lock(&users_mutex);
-	if(user==NULL){
+	if(!user){
 		if(users[sockfd]){
 			free(users[sockfd]);
 			users[sockfd]=NULL;
@@ -220,7 +220,11 @@ char * get_host(int * sockfd){
 	res=IRCTADUser_GetData (&id, &user, &nick, &real, &host, &IP, sockfd, &creationTS, &actionTS, &away);
 	switch (res){
 		case IRC_OK:
-			//IRC_MFree(5, user, nick, real, IP, away);
+			free(user);
+			free(nick);
+			free(real);
+			free(IP);
+			free(away);
 			return host;
 		case IRCERR_NOENOUGHMEMORY:
 			syslog(LOG_ERR,"IRCServ: Error en gethost(): memoria insuficiente");
@@ -233,8 +237,8 @@ char * get_host(int * sockfd){
 }
 
 long ComplexUser_bySocket(char ** prefix, int  * psocket){
-	return IRC_ComplexUser1459 (prefix, get_nick(*psocket),
-		 get_user(*psocket),  get_host(psocket), NULL);
+	if(!psocket) return ERROR;
+	return IRC_ComplexUser1459 (prefix, get_nick(*psocket), get_user(*psocket), get_host(psocket), NULL);
 
 }
 
