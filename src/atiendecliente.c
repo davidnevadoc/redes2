@@ -43,9 +43,10 @@ void * atiende_cliente(data* d){
 	/*Buffer donde se almacena el mensaje recibido*/
 	char buff[BUFF_SIZE];
 	/*Comando recibido*/
-	char * command = NULL, * command_q = NULL;
+	char * command = NULL, * command_q = NULL, *reply = NULL;
 	/*Codigo del comando recibido*/
 	long command_code = 0;
+	
 
 
 	inicializaComandos();
@@ -64,7 +65,9 @@ void * atiende_cliente(data* d){
 			command_code = IRC_CommandQuery(command);
 			d->mensaje=command;
 			if(command){
-				if(command_code < 0 || command_code > NUM_COMANDOS){
+				if(command_code < 0 || command_code > NUM_COMANDOS){					
+					IRCMsg_ErrUnKnownCommand (&reply, SERV_NAME, get_nick(d->socket), d->mensaje);
+					send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 					syslog(LOG_ERR, "IRCServ: Error al leer el comando %s"
 						 "Error: %ld ", command, command_code);
 				} else { /*Llamo a la funcion del comando  correspondiente*/

@@ -189,6 +189,8 @@ int join(data* d){
 
 	if ( (res = IRCParse_Join (d->mensaje, &prefix, &channel, &key, &msg)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de JOIN, %ld", res);
+		IRCMsg_ErrNeedMoreParams (&reply, SERV_NAME, get_nick(d->socket), d->mensaje);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 		return ERROR;
 	}
 	if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)) != IRC_OK){
@@ -308,6 +310,9 @@ int whois(data *d){
 	res = IRCParse_Whois (d->mensaje, &prefix, &target, &maskarray);
 	if ( res != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de whois %ld", res);
+		IRCMsg_ErrNoNickNameGiven (&reply, SERV_NAME, get_nick(d->socket));//Malformado=no se introduce nick
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		free(reply);
 		return ERROR;
 	}
 
@@ -391,7 +396,6 @@ int names(data* d){
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
 	/*Liberamos recursos*/
-	//IRC_MFree(5, prefix, channel, target, reply, list);
 	free(channel);
 	free(target);
 	free(prefix);
@@ -404,6 +408,7 @@ int names(data* d){
 *@param d Estructura de datos con la informacion del hilo
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
+
 int privmsg(data *d){
 	/*Inicializacion de variables*/
 	long res=0, nlist=0;
@@ -418,13 +423,15 @@ int privmsg(data *d){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de PRIVMSG %ld", res);
 		return ERROR;
 	}
+
+
 	/**/
 	if(msgtarget){
 		/*Obtenemos el prefijo para enviar*/
 		ComplexUser_bySocket(&prefix_s, &(d->socket));
 		/*Mensaje para el usuario*/
 		IRCMsg_Privmsg (&reply, prefix_s, msgtarget, msg);
-		if(IRCTAD_ListNicksOnChannelArray(msgtarget, &list, &nlist)!=IRCERR_NOVALIDCHANNEL){
+		if(IRCTAD_ListNicksOnChannelArray(msgtarget, &list, &nlist)!=IRCERR_NOVALIDCHANNEL){/*Caso mensaje a canal*/
 			for(i=0;i<nlist;i++){
 				sockdest=get_sock_by_nick(list[i]);
 				if(sockdest!=d->socket){
@@ -433,11 +440,13 @@ int privmsg(data *d){
 				free(list[i]);
 			}
 		}
-		else if((sockdest=get_sock_by_nick(msgtarget))!= 0){
+		//TODO He cambiado la comprobacion de este else if, si no petaba cuando el nick no existía
+		else if(IRCTADUser_Test (0, NULL, msgtarget) == IRC_OK){
+			sockdest=get_sock_by_nick(msgtarget);
 			res = IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away);
 			if(res!=IRC_OK){
 				syslog(LOG_ERR, "IRCServ: Error en GetAway %ld" ,res);
-				IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
+				//IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
 				return ERROR;
 			}
 			if(away){
@@ -449,7 +458,7 @@ int privmsg(data *d){
 			syslog(LOG_INFO,"IRCServ: Mensaje enviado a %d", sockdest);
 			send(sockdest, reply,  sizeof(char)*strlen(reply), 0);
 
-		}else{
+		}else{ //Aqui nunca entraaaaaaaaaaaa
 			syslog(LOG_INFO, "IRCServ: No se encontro el nick de destino");
 			free(reply);
 			IRCMsg_ErrNoSuchNick(&reply, prefix_s, get_nick(d->socket), msgtarget);
@@ -564,27 +573,19 @@ int topic(data* d){
 		//IRC_MFree(4, prefix, channel, topic, reply);
 		return OK;
 	}
-	if(topic == NULL){
-		if(IRCTAD_GetTopic (channel, &topic)==IRC_OK){
-			IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
-		} else {
+	
+	if(topic == NULL){ 
+		IRCTAD_GetTopic (channel, &topic);
+		if(topic == NULL){//Canal sin topic anteriormente establecido
 			IRCMsg_RplNoTopic (&reply, SERV_NAME, get_nick(d->socket), channel);
+		}else{//Mostramos el topic actual
+			IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
 		}
-		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-		//IRC_MFree(4, prefix, channel, topic, reply);
-		return OK;
+	}else{ //Cambio de topic
+		IRCTAD_SetTopic (channel, get_nick(d->socket), topic);
+		IRCMsg_Topic (&reply, SERV_NAME, channel, topic);
 	}
-	if((res = IRCTAD_SetTopic (channel, get_nick(d->socket), topic)) != IRC_OK){
-		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_SetTopic() %ld", res);
-		//TODO falta liberar
-		return ERROR;
-	}
-	/*Creacion de mensaje cuando se cambia el topic*/
-	if((res = IRCMsg_Topic (&reply, SERV_NAME, channel, topic)) != IRC_OK){
-		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Topic() %ld", res);
-		//TODO falta liberar
-		return ERROR;
-	}
+
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	/*Liberamos recursos*/
 	free(prefix);
@@ -601,7 +602,7 @@ int topic(data* d){
 */
 int kick(data* d){
 	char *prefix, *channel , *user, *comment, *reply;
-	long res = 0;
+	long res = 0, mode = 0, sockdest = 0;
 	prefix=channel=user=comment=reply=NULL;
 	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando KICK: %s", d->mensaje);
@@ -610,17 +611,26 @@ int kick(data* d){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de KICK %ld", res);
 		return ERROR;
 	} 
-	/*Veo si el usuario es operador del canal, entonces no se le puede expulsar*/
-	//IRCTAD_GetUserModeOnChannel (char *channel, char *nick)
-	if ((res = IRCTAD_KickUserFromChannel (channel,user)) != IRC_OK){
-		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
-		return ERROR;
-	} 
+	mode = IRCTAD_GetUserModeOnChannel(channel, get_nick(d->socket));
 
-	if ((res = IRCMsg_Kick (&reply, prefix, channel, user, comment)) != IRC_OK){
-		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
-		return ERROR;
-	} 
+	/*Veo si el usuario es operador del canal, entonces no se le puede expulsar*/
+	if(mode&IRCUMODE_OPERATOR){//Le puede expulsar
+
+		if ((res = IRCTAD_KickUserFromChannel (channel,user)) != IRC_OK){
+			syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
+			return ERROR;
+		} 
+
+		if ((res = IRCMsg_Kick (&reply, SERV_NAME, channel, user, comment)) != IRC_OK){
+			syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
+			return ERROR;
+		}
+		sockdest=get_sock_by_nick(user);
+		send(sockdest, reply, sizeof(char)*strlen(reply), 0);
+	}else{
+
+		IRCMsg_ErrChanOPrivsNeeded(&reply, SERV_NAME, get_nick(d->socket), channel);
+	}
 
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	return OK;
@@ -632,6 +642,5 @@ int kick(data* d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int comandoDefault(data* d){
-	
 	return OK;
 }
