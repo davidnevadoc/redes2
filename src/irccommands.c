@@ -154,15 +154,22 @@ int quit(data* d){
 	}
 	if(msg == NULL){ //Enviamos como mensaje por defecto el nick
 		nick = get_nick(d->socket);
-		IRCMsg_Quit (&reply, prefix, nick);
+		if (IRCMsg_Quit (&reply, prefix, nick)!=IRC_OK ){
+			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
+			return ERROR;
+		}
 	}else{
-		IRCMsg_Quit (&reply, prefix, msg);
+		if(IRCMsg_Quit (&reply, prefix, msg)){
+			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
+			return ERROR;
+		}
 	}
 	set_user(d->socket, NULL);
 	set_nick(d->socket, NULL);
 	d->stop=1;
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-	
+	free(reply);
+	free(prefix);
 	return OK;
 }
 /**

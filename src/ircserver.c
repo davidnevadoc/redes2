@@ -59,11 +59,8 @@ int init_var(void){
 
 int set_user(int sockfd, char * user){
 	if (sockfd<0 || sockfd > MAXUSERS) return ERROR;
-	if(strlen(user)> USERLEN){
-		return LONGUSER;
-	}
 	pthread_mutex_lock(&users_mutex);
-	if(!user){
+	if(user==NULL){
 		if(users[sockfd]){
 			free(users[sockfd]);
 			users[sockfd]=NULL;
@@ -71,6 +68,10 @@ int set_user(int sockfd, char * user){
 		pthread_mutex_unlock(&users_mutex);
 		return OK;
 	}else {
+		if( strlen(user) >USERLEN){
+			pthread_mutex_unlock(&users_mutex);
+			return LONGUSER;
+		}		
 		if(!users[sockfd]){
 			users[sockfd] = malloc(USERLEN * sizeof(char));
 			if(!users[sockfd]){
@@ -82,8 +83,6 @@ int set_user(int sockfd, char * user){
 		pthread_mutex_unlock(&users_mutex);
 		return OK;
 	}
-	
-
 
 }
 /**
@@ -94,9 +93,6 @@ int set_user(int sockfd, char * user){
  */
 int set_nick(int sockfd, char * nick){
 	if(sockfd<0 || sockfd > MAXUSERS) return ERROR;
-	if(strlen(nick)> NICKLEN){
-		return LONGNICK;
-	}
 	pthread_mutex_lock(&nicks_mutex);
 	if(!nick){
 		if(nicks[sockfd]){
@@ -106,6 +102,10 @@ int set_nick(int sockfd, char * nick){
 		pthread_mutex_unlock(&nicks_mutex);
 		return OK;
 	}else {
+		if(strlen(nick)> NICKLEN){
+			pthread_mutex_unlock(&nicks_mutex);
+			return LONGNICK;
+		}
 		if(!nicks[sockfd]){
 			nicks[sockfd] = malloc(NICKLEN * sizeof(char));
 			if(!nicks[sockfd]){
