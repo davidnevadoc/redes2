@@ -641,6 +641,15 @@ int kick(data* d){
 }
 
 /**
+*@brief Función que atiende al comando AWAY
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int away(data* d){
+	return OK;
+}
+
+/**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso

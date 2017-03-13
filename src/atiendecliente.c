@@ -26,6 +26,7 @@ void inicializaComandos(){
 	listaComandos[15] = privmsg;
 	listaComandos[33] = ping;
 	listaComandos[34] = pong;
+	listaComandos[36] = away;
 		
 }
 
