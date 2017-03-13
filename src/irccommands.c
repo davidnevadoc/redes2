@@ -381,9 +381,13 @@ int names(data* d){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de names %ld", res);
 		return ERROR;
 	}
-	IRCTAD_ListNicksOnChannel(channel, &list, &numberOfUsers);
+	if (IRCTAD_ListNicksOnChannel(channel, &list, &numberOfUsers) != IRC_OK){
+		IRCMsg_RplEndOfNames (&reply, SERV_NAME, get_nick(d->socket), channel);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		return OK;
+	}
 
-	if( (res = IRCMsg_RplNamReply (&reply, SERV_NAME, get_nick(d->socket), "a", channel, list)) != IRC_OK){//TODO si pongo null peta, asi que dejo a.
+	if( (res = IRCMsg_RplNamReply (&reply, SERV_NAME, get_nick(d->socket), "type", channel, list)) != IRC_OK){//TODO si pongo null peta, asi que dejo type.
 		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplNamReply(): %ld", res);
 		return ERROR;
 	} 
