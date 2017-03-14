@@ -7,11 +7,11 @@
  *@param d Estructura de datos con la informacion del hilo
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-/*De momento solo muestra la contraseña introducida*/
+/*De momento solo muestra la contraseña introducida TODO*/
 int pass(data* d){
 	long res = 0;
 	char *prefix, *password;
-	char ans[100];
+	char ans[MAXREPLY];
 
 		syslog(LOG_INFO,"IRCServ: Se ejecuta el comando PASS: %s", d->mensaje);
 	res = IRCParse_Pass (d->mensaje, &prefix, &password);
@@ -356,10 +356,10 @@ int whois(data *d){
 		return ERROR;
 	}
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-	syslog(LOG_ERR, "IRCServ: Termina WHOIS");
+
 	/*Liberamos recursos*/
-	//IRC_MFree(9, reply, prefix, target, maskarray, real, host, ip, away, channellist);
-	syslog(LOG_ERR, "IRCServ: Termina WHOIS");
+	IRC_MFree(9, &reply, &prefix, &target, &maskarray, &real, &host, &ip, &away, &channellist);
+	//TODO Liberar channellist bien
 	return OK;
 }
 /**
@@ -447,7 +447,7 @@ int privmsg(data *d){
 		//TODO He cambiado la comprobacion de este else if, si no petaba cuando el nick no existía
 		else if(IRCTADUser_Test (0, NULL, msgtarget) == IRC_OK){
 			sockdest=get_sock_by_nick(msgtarget);
-			res = IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away);
+			res=IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away);
 			if(res!=IRC_OK){
 				syslog(LOG_ERR, "IRCServ: Error en GetAway %ld" ,res);
 				//IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
@@ -548,7 +548,7 @@ int part(data *d){
 		syslog(LOG_INFO, "IRCServ: Error en IRCTAD_Part %ld",res);
 		//TODO Mensajes de error
 	}
-	//IRC_MFree(6, prefix, channel, msg, reply, prefix_s, list);
+	IRC_MFree(6, &prefix, &channel, &msg, &reply, &prefix_s, &list);
 	return OK;
 }
 
@@ -646,6 +646,47 @@ int kick(data* d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int away(data* d){
+	long res=0;
+	char * reply, *prefix, *msg, *away;
+	reply=prefix=msg=away=NULL;
+	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando AWAY %s", d->mensaje);
+	if((res=IRCParse_Away(d->mensaje, &prefix, &msg))!=IRC_OK){
+		syslog(LOG_ERR,"IRCServ: Error al parsear Away %ld",res);
+		return ERROR;
+	}
+	if((res=IRCTADUser_GetAway(0, NULL,get_nick(d->socket),NULL, &away))!=IRC_OK){
+		syslog(LOG_ERR,"IRCServ: Error en IRCTADUser_GetAway %ld",res);
+		IRC_MFree(2,&prefix, &msg);
+		return ERROR;
+	}
+	if(!away){
+		if((res=IRCMsg_RplNowAway(&reply, SERV_NAME, get_nick(d->socket)))!=IRC_OK){
+			syslog(LOG_ERR,"IRCServ: Error en IRCMsg_RplNowAway %ld",res);
+			IRC_MFree(2,&prefix, &msg);
+			return ERROR;
+		}
+		send(d->socket, reply, sizeof(char)*strlen(reply),0);
+		free(reply);
+		if((res=IRCTADUser_SetAway(0, NULL,get_nick(d->socket),NULL, msg))!=IRC_OK){
+			syslog(LOG_ERR,"IRCServ: Error en IRCTADUser_SetAway %ld",res);
+			IRC_MFree(2,&prefix, &msg);
+			return ERROR;
+		}
+	}else{
+		if((res=IRCTADUser_SetAway(0, NULL,get_nick(d->socket),NULL, NULL))!=IRC_OK){
+			syslog(LOG_ERR,"IRCServ: Error en IRCTADUser_SetAway %ld",res);
+			IRC_MFree(2,&prefix, &msg);
+			return ERROR;
+		}
+		if((res=IRCMsg_RplUnaway(&reply, SERV_NAME, get_nick(d->socket)))!=IRC_OK){
+			syslog(LOG_ERR,"IRCServ: Error en IRCMsg_RplUnAway %ld",res);
+			IRC_MFree(2,&prefix, &msg);
+			return ERROR;
+		}
+		send(d->socket, reply, sizeof(char)*strlen(reply),0);
+		free(reply);
+	}
+	IRC_MFree(2,&prefix, &msg);
 	return OK;
 }
 
