@@ -530,9 +530,10 @@ int part(data *d){
 		syslog(LOG_ERR, "IRCServ: Error al parsear PART %ld" ,res);
 		return ERROR;
 	}
-	if((res=IRCTAD_Part(channel, get_nick(d->socket)))==IRC_OK){
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	switch(res=IRCTAD_Part(channel, get_nick(d->socket))){
+		case IRC_OK :
 		syslog(LOG_INFO, "IRCServ: El usuario %s salio del canal %s", get_nick(d->socket), channel);
-		ComplexUser_bySocket(&prefix_s, &(d->socket));
 		IRCMsg_Part(&reply, prefix_s, channel, msg);
 		send(d->socket, reply, sizeof(char)* strlen(reply), 0);
 		IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
@@ -544,11 +545,23 @@ int part(data *d){
 			}
 			free(list[i]);
 		}
-	}else{
-		syslog(LOG_INFO, "IRCServ: Error en IRCTAD_Part %ld",res);
-		//TODO Mensajes de error
+		free(list);
+		break;
+		case IRCERR_NOVALIDCHANNEL:
+			syslog(LOG_INFO, "IRCServ: El usuario %s intenta salir de un canal"
+				"no valido %s", get_nick(d->socket), channel);
+			if( IRCMsg_ErrNoSuchChannel(&reply, prefix_s, get_nick(d->socket), channel)!=IRC_OK){
+				syslog(LOG_ERR, "IRCServ: Error en IRCMsg_ErrNoSuchChannel ");
+				IRC_MFree(4, &prefix, &channel, &msg, &prefix_s);
+				return ERROR;
+			}
+			send(d->socket, reply, sizeof(char)* strlen(reply), 0);
+			
+		default:
+		syslog(LOG_INFO, "IRCServ: Error en IRCTAD_Part (o caso no contemplado) %ld",res);
+		
 	}
-	IRC_MFree(6, &prefix, &channel, &msg, &reply, &prefix_s, &list);
+	IRC_MFree(5, &prefix, &channel, &msg, &reply, &prefix_s);
 	return OK;
 }
 
