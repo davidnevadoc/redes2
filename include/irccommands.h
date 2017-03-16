@@ -90,6 +90,7 @@ int kick(data* d);
 */
 int away(data* d);
 
+int disconnect(data *d);
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo

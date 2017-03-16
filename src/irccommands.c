@@ -702,12 +702,22 @@ int away(data* d){
 	IRC_MFree(2,&prefix, &msg);
 	return OK;
 }
+/*Para desconectarse a cholon*/
+int disconnect(data *d ){
+	syslog(LOG_INFO, "IRCServer: DISCONNECT %s", get_nick(d->socket));
+	IRCTAD_Quit(get_nick(d->socket));
+	set_user(d->socket, NULL);
+	set_nick(d->socket, NULL);
+	d->stop=1;
+	return OK;
+}
 
 /**
 *@brief Función que atiende al comando por defecto
 *@param d Estructura de datos con la informacion del hilo
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
+
 int comandoDefault(data* d){
 	return OK;
 }

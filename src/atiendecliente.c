@@ -74,6 +74,9 @@ void * atiende_cliente(data* d){
 				} else { /*Llamo a la funcion del comando  correspondiente*/
 					(*listaComandos[command_code - 1])(d);
 				}
+			}else {
+				syslog(LOG_INFO, "IRCServ: Desconexion abrupta");
+				(disconnect(d));
 			}
 		}
 		
