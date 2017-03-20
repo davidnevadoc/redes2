@@ -1,7 +1,7 @@
 #include "../include/irccommands.h"
 
 #include <redes2/irc.h>
-
+#define MOTD_MSG "bendermini.txt"
 /**
 *@brief Función que atiende al comando PASS
  *@param d Estructura de datos con la informacion del hilo
@@ -700,6 +700,37 @@ int away(data* d){
 		free(reply);
 	}
 	IRC_MFree(2,&prefix, &msg);
+	return OK;
+}
+
+int motd(data *d ){
+	long res=0;
+	char *nick, * reply= NULL;
+	char streply[MAXREPLY]={0};
+	FILE * f_in=NULL;
+	syslog(LOG_INFO, "IRCServ: Se ejecuta el comando MOTD %s", d->mensaje);
+	nick=get_nick(d->socket);
+	if((f_in=fopen(MOTD_MSG,"r"))==NULL){
+		syslog(LOG_ERR,"IRCServ: No se encontro el fichero %s", MOTD_MSG);
+		return ERROR;
+	}
+	IRCMsg_RplMotdStart(&reply, SERV_NAME, nick, SERV_NAME);
+	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
+	free(reply);
+	while(fgets(streply, MAXREPLY ,f_in)){
+		streply[strlen(streply)-1]='\0';
+		IRCMsg_RplMotd(&reply,SERV_NAME, nick, streply);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		free(reply);
+	}
+	syslog(LOG_INFO, "IRCServ: Mensaje del dia enviado");
+	fclose(f_in);
+	if((res=IRCMsg_RplEndOfMotd(&reply, SERV_NAME, nick))!=IRC_OK){
+		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplEndOfMotd: %ld", res);
+		return ERROR;
+	}
+	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
+	free(reply);
 	return OK;
 }
 /*Para desconectarse a cholon*/

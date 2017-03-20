@@ -24,9 +24,11 @@ void inicializaComandos(){
 	listaComandos[30] = whois;
 	listaComandos[11] = names;
 	listaComandos[15] = privmsg;
+	listaComandos[17] = motd;
 	listaComandos[33] = ping;
 	listaComandos[34] = pong;
 	listaComandos[36] = away;
+
 		
 }
 

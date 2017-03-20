@@ -89,7 +89,7 @@ int kick(data* d);
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int away(data* d);
-
+int motd(data *d );
 int disconnect(data *d);
 /**
 *@brief Función que atiende al comando por defecto
