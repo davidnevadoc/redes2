@@ -8,7 +8,7 @@
  * @date 12/02/2017
  */
 #define MAX_QUEUE 10
-#include "../include/main.h"
+#include "../includes/main.h"
 
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;

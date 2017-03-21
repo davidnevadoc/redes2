@@ -1,5 +1,5 @@
 
-#include "../include/atiendecliente.h"
+#include "../includes/atiendecliente.h"
 /*Lista con los comandos disponibles,*/ 
 int (*listaComandos[NUM_COMANDOS])(data *);
 
@@ -15,6 +15,7 @@ void inicializaComandos(){
 	listaComandos[0] = pass;
 	listaComandos[1] = nick;
 	listaComandos[2] = user;
+	listaComandos[4] = mode;
 	listaComandos[6] = quit;
 	listaComandos[8] = join;
 	listaComandos[9] = part;

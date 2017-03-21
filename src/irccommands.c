@@ -1,4 +1,4 @@
-#include "../include/irccommands.h"
+#include "../includes/irccommands.h"
 
 #include <redes2/irc.h>
 #define MOTD_MSG "bendermini.txt"
@@ -136,7 +136,7 @@ int user(data* d){
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int quit(data* d){
-	char *prefix = NULL, *msg = NULL, *nick = NULL, *prefix_s=NULL;
+	char *prefix = NULL, *msg = NULL, *prefix_s=NULL;
 	long res = 0;
 	char *reply = NULL;
 
@@ -144,7 +144,8 @@ int quit(data* d){
 	if((res = IRCParse_Quit (d->mensaje, &prefix, &msg) )!=IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el comando QUIT, %ld", res);
 		return ERROR;
-	}/*TODO
+	}
+	/*TODO
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
 	if(msg == NULL){ //Enviamos como mensaje por defecto el nick
 		nick = get_nick(d->socket);
@@ -349,6 +350,12 @@ int whois(data *d){
 			return ERROR;
 		}
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		
+		/*Mensaje de away*/
+		if(away != NULL){
+			IRCMsg_RplAway(&reply,SERV_NAME, get_nick(d->socket), maskarray, away);
+			send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		}
 	}
 
 	if ((res = IRCMsg_RplEndOfWhoIs(&reply, SERV_NAME, get_nick(d->socket), maskarray)) != IRC_OK){
@@ -447,8 +454,7 @@ int privmsg(data *d){
 		//TODO He cambiado la comprobacion de este else if, si no petaba cuando el nick no existía
 		else if(IRCTADUser_Test (0, NULL, msgtarget) == IRC_OK){
 			sockdest=get_sock_by_nick(msgtarget);
-			res=IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away);
-			if(res!=IRC_OK){
+			if((res = IRCTADUser_GetAway(0, NULL, get_nick(d->socket), NULL, &away))!=IRC_OK){
 				syslog(LOG_ERR, "IRCServ: Error en GetAway %ld" ,res);
 				//IRC_MFree(6, msgtarget, msg, prefix, prefix_s, reply, list);
 				return ERROR;
@@ -462,7 +468,7 @@ int privmsg(data *d){
 			syslog(LOG_INFO,"IRCServ: Mensaje enviado a %d", sockdest);
 			send(sockdest, reply,  sizeof(char)*strlen(reply), 0);
 
-		}else{ //Aqui nunca entraaaaaaaaaaaa
+		}else{ 
 			syslog(LOG_INFO, "IRCServ: No se encontro el nick de destino");
 			free(reply);
 			IRCMsg_ErrNoSuchNick(&reply, prefix_s, get_nick(d->socket), msgtarget);
@@ -703,6 +709,11 @@ int away(data* d){
 	return OK;
 }
 
+/**
+*@brief Función que atiende al comando MOTD
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int motd(data *d ){
 	long res=0;
 	char *nick, * reply= NULL;
@@ -732,6 +743,16 @@ int motd(data *d ){
 	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
 	free(reply);
 	return OK;
+}
+
+/**
+*@brief Función que atiende al comando MODE
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
+int mode(data *d){
+	
+
 }
 /*Para desconectarse a cholon*/
 int disconnect(data *d ){
