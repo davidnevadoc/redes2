@@ -194,13 +194,19 @@ int join(data* d){
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 		return ERROR;
 	}
-	if ( (res =IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)) != IRC_OK){
+	if ( (res = IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)) != IRC_OK){
+		if (res == IRCERR_FAIL){ //Si el canal tiene clave y el usuario no tiene los permisos
+				IRCMsg_ErrBadChannelKey (&reply, SERV_NAME, get_nick(d->socket), channel);
+				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+				return OK;
+		}
 		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_Join, %ld", res);
 		return ERROR;
 	}
+
 	syslog(LOG_INFO, "Usuario %s, se unio al canal %s", get_nick(d->socket), channel);
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
-	if ( IRCMsg_Join(&reply, prefix_s, msg, key, channel) != IRC_OK){
+	if ( IRCMsg_Join(&reply, prefix_s, msg, NULL, channel) != IRC_OK){ //he cambiado key por NULL porque el mensaje no salia bien, mostraba la key y eso no tiene que hacerlo
 		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Join, %ld", res);
 		return ERROR;
 	}
@@ -237,7 +243,7 @@ int list (data *d){
 		/*Bucle recorre canales*/
 		for(i=0;i<num;i++){
 			mode=IRCTADChan_GetModeChar(list[i]);
-			if( !mode || ((long) *mode != IRCMODE_SECRET)){
+			if( !mode || (mode[0] != 's')){ //Si no es canal secreto lo muestro
 				syslog(LOG_ERR, "aqui se llega");
 				/*get numero de usuarios*/
 				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
@@ -258,7 +264,7 @@ int list (data *d){
 		/*Bucle recorre canales*/
 		for(i=0;i<num;i++){
 			mode=IRCTADChan_GetModeChar(list[i]);
-			if( !mode || (!(strcmp(list[i], channel)) && ((long) *mode != IRCMODE_SECRET))){
+			if( !mode || (!(strcmp(list[i], channel)) && (mode[0] != 's'))){
 				/*get numero de usuarios*/
 				num_users=IRCTADChan_GetNumberOfUsers(list[i]);
 				/*get topic /tema del canal*/
@@ -577,10 +583,10 @@ int part(data *d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int topic(data* d){
-	char *prefix, *channel , *topic, *reply;
+	char *prefix, *channel , *topic, *reply, *mode;
 	long res = 0;
 	char streply[MAXREPLY]={0};
-	prefix=channel=topic=reply=NULL;
+	prefix=channel=topic=reply=mode=NULL;
 	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando TOPIC: %s", d->mensaje);
 
@@ -605,6 +611,15 @@ int topic(data* d){
 			IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
 		}
 	}else{ //Cambio de topic
+		mode = IRCTADChan_GetModeChar(channel);
+		if(mode[0] == 't'){ // t - sólo los operadores de canal pueden cambiar el topic
+			res =IRCTAD_GetUserModeOnChannel (channel, get_nick(d->socket));
+			if(IRCUMODE_OPERATOR != (res & IRCUMODE_OPERATOR)){
+				IRCMsg_ErrChanOPrivsNeeded (&reply, SERV_NAME, get_nick(d->socket), channel);
+				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+				return OK;
+			}
+		}
 		IRCTAD_SetTopic (channel, get_nick(d->socket), topic);
 		IRCMsg_Topic (&reply, SERV_NAME, channel, topic);
 	}
@@ -751,8 +766,45 @@ int motd(data *d ){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int mode(data *d){
-	
+    long res = 0, usermode = 0;
+    char *prefix, *channeluser, *mode, *user, *reply;
+    prefix=channeluser=mode=user=reply=NULL;
+ 
+    syslog(LOG_INFO, "IRCServ: Se ejecuta el comando MODE %s", d->mensaje);
+     
+    res = IRCParse_Mode(d->mensaje, &prefix, &channeluser, &mode, &user);
+    if(res != IRC_OK){
+        syslog(LOG_ERR,"IRCServ: Error al parsear MODE %ld",res);
+        return ERROR;
+    }
+	if (channeluser == NULL || mode == NULL){
+		syslog(LOG_ERR,"IRCServ: Parametros insuficiente en IRCParse_Mode");
+		return ERROR;
+	}
+ 
+	//TODO esta comprobacion es mu cutre pero no se me ocurria nada mejor
+	if(mode[2] == 'k'){ //k - poner clave al canal
+		syslog(LOG_ERR,"IRCServ:  AQUIIIIIIIIIIII");
+		usermode = IRCTAD_GetUserModeOnChannel(channeluser, get_nick(d->socket));	
+		if(IRCUMODE_OPERATOR == (usermode & IRCUMODE_OPERATOR)){ //solo puedo cambiar si tengo permiso, si soy operador
+			IRCTADChan_SetPassword (channeluser, user);
+		}else{
+			IRCMsg_ErrChanOPrivsNeeded (&reply,SERV_NAME, get_nick(d->socket), channeluser);
+			send(d->socket, reply, strlen(reply)*sizeof(char), 0);
+			return OK;
+		}
+	}
 
+	IRCTAD_Mode(channeluser, get_nick(d->socket), mode);
+	res = IRCMsg_Mode(&reply, SERV_NAME, channeluser, mode, NULL);
+	if(res != IRC_OK){
+        syslog(LOG_ERR,"IRCServ: Error en la funcion IRCMsg_Mode %ld",res);
+        return ERROR;
+    }
+
+	send(d->socket, reply, strlen(reply)*sizeof(char), 0);
+
+	return OK;
 }
 /*Para desconectarse a cholon*/
 int disconnect(data *d ){
