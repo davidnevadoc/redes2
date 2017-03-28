@@ -806,7 +806,13 @@ int mode(data *d){
 
 	return OK;
 }
-/*Para desconectarse a cholon*/
+/**
+ * Esta funcion cierra la conexion cuando detecta que el cliente se ha desconectado
+ * de forma abrupta 
+ *@brief Funcion para la desconexion abrupta
+ *@param Estructura de datos con la informacion del hilo
+ *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+ */
 int disconnect(data *d ){
 	syslog(LOG_INFO, "IRCServer: DISCONNECT %s", get_nick(d->socket));
 	IRCTAD_Quit(get_nick(d->socket));

@@ -8,8 +8,15 @@
  * @date 12/02/2017
  */
 #define MAX_QUEUE 10
+#define DEFAULT_PORT 6667
 #include "../includes/main.h"
-
+/**
+ * Funcion Main del servidor. Gestiona los parametros pasados por el usuario
+ * y abre un socket para ponerse a la espera de mensajes en el puerto deseado.
+ * @brief Main del servidor
+ * @return ERROR si se produce un fallo que provoca una salida inseperada
+ * 	   OK salida controlada con el cierre del servidor
+ */
 int main(int argc, char *argv[]){
 	struct sockaddr_in serv;
 	struct sockaddr cli;
@@ -24,8 +31,8 @@ int main(int argc, char *argv[]){
 
 	/*Comprobacion de parametros*/
 	if(argc<2){
-		port = 55000;
-		printf("Se asigna el puerto 55000\n");
+		port = DEFAULT_PORT;
+		printf("Se asigna el puerto %" PRIu16 "\n", port);
 	} else if (argc == 2 ) {
 		port= (uint16_t) atoi(argv[1]) ;
 	} else {

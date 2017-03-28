@@ -193,7 +193,9 @@ char * get_user(int sockfd){
 
 }
 /**
+ * Libera la lista de usuarios y nicks asi como las estructuras mutex
  *@brief Libera todos los recursos utilizados
+ * 
  */
 void free_all(void){
 	int i;
@@ -209,8 +211,13 @@ void free_all(void){
 	pthread_mutex_destroy(&nicks_mutex);
 	return;
 }
-
-/********************/
+/**
+ * Devuelve el host asociado a un socket, reserva memoria para la cadena de 
+ * caracteres devuelta. Es decir, esta debera ser liberada posteriormente
+ * @brief Devuelve el host asociado al socket 
+ * @param sockfd Puntero al socket 
+ * @return host asociao a socketfd
+ */
 char * get_host(int * sockfd){
 	char * user, * nick, * real, * host, * IP, * away;
 	long creationTS, actionTS;
@@ -235,7 +242,15 @@ char * get_host(int * sockfd){
 	}
 
 }
-
+/**
+ * Wrapper para la funcion IRC_ComplexUser1459. Devuelve el prefijo de un usuario
+ * utilizando unicamente el identificador del socket
+ * @bridef Devuelve el prfijo de un usuario asociado a un socket
+ * @param prefix Puntero a la cadena de caracteres donde se almacena el prefijo obtenido,
+ * 	es decir, el prefijo asociado al socket
+ *	  psocket Puntero al socket del usuario cuyo prefijo se quiere obtener
+ * @rerturn se devuelve el codigo de control de la funcion IRC_COmplexUser1459
+ */
 long ComplexUser_bySocket(char ** prefix, int  * psocket){
 	if(!psocket) return ERROR;
 	return IRC_ComplexUser1459 (prefix, get_nick(*psocket), get_user(*psocket), get_host(psocket), NULL);
