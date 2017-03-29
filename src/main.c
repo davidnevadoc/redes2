@@ -7,9 +7,13 @@
  * @file main.c
  * @date 12/02/2017
  */
-#define MAX_QUEUE 10
-#define DEFAULT_PORT 6667
+
 #include "../includes/main.h"
+#include <unistd.h> 
+int stop=0;
+void manejador_SIGINT(int sig){
+	stop=1;
+}
 /**
  * Funcion Main del servidor. Gestiona los parametros pasados por el usuario
  * y abre un socket para ponerse a la espera de mensajes en el puerto deseado.
@@ -18,14 +22,15 @@
  * 	   OK salida controlada con el cierre del servidor
  */
 int main(int argc, char *argv[]){
+	/*Declaracion e inicializacion de variables*/
 	struct sockaddr_in serv;
 	struct sockaddr cli;
-
+	
+	int n=0, i=0;
 	int sockfd =-1, connfd =-1;
 	uint16_t port =0;
 	socklen_t clilen = 0;
 	
-
 	bzero(&serv, sizeof(serv));
 	bzero(&cli, sizeof(cli));
 
@@ -48,7 +53,11 @@ int main(int argc, char *argv[]){
 		syslog(LOG_ERR, "IRCServ: Error en sockfd()");
 		exit(ERROR);
 	} 
-	
+	/*Armar manejador de sennal*/
+	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
+		perror("Error en la captura de SIGINT");
+		exit(ERROR);
+	}
 	/*rellenar estructura de serv*/
 	serv.sin_family=AF_INET; /*Vamos en IPv4*/
 	serv.sin_addr.s_addr=htonl(INADDR_ANY);
@@ -77,7 +86,7 @@ int main(int argc, char *argv[]){
 	/*bucle principal, a la espera conexiones*/
 	printf("A la espera de mensajes, escuchando puerto %d\n",
 		ntohs(serv.sin_port));
-	while(1){
+	while(!stop){
 		clilen= sizeof(cli);
 		if( (connfd=accept(sockfd, &cli, &clilen)) == -1){
 			syslog(LOG_ERR,"IRCServ: Error en accept(): %d",
@@ -86,8 +95,12 @@ int main(int argc, char *argv[]){
 		
 		Atiende_cliente(cli, connfd);
 	}
-	close(sockfd);
-	printf("Servidor cerrado\n");
+	n = getdtablesize();
+	for(i=0;i<n;i++){
+		close(i);
+	}
+	free_all();
+	printf("\nServidor cerrado\n");
 	exit(OK);
 }
 

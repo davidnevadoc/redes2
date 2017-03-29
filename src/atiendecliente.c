@@ -70,13 +70,15 @@ void * atiende_cliente(data* d){
 			d->mensaje=command;
 			if(command){
 				if(command_code < 0 || command_code > NUM_COMANDOS){					
-					IRCMsg_ErrUnKnownCommand (&reply, SERV_NAME, get_nick(d->socket), d->mensaje);
-					send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+					if(IRCMsg_ErrUnKnownCommand (&reply, SERV_NAME, get_nick(d->socket), d->mensaje)==IRC_OK){
+						send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+					}
 					syslog(LOG_ERR, "IRCServ: Error al leer el comando %s"
 						 "Error: %ld ", command, command_code);
 				} else { /*Llamo a la funcion del comando  correspondiente*/
 					(*listaComandos[command_code - 1])(d);
 				}
+				free(command);
 			}else {
 				syslog(LOG_INFO, "IRCServ: Desconexion abrupta");
 				(disconnect(d));
@@ -145,6 +147,7 @@ int Atiende_cliente(struct sockaddr cli, int connfd){
 			syslog(LOG_ERR, "IRCServ: Error en pthread_detatch");
 			
 		}
+		free(taux);
 	} else {
 		syslog(LOG_ERR, "IRCServ: Error en"
 		" malloc(): No se pudo reservar memoria"

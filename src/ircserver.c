@@ -252,8 +252,13 @@ char * get_host(int * sockfd){
  * @rerturn se devuelve el codigo de control de la funcion IRC_COmplexUser1459
  */
 long ComplexUser_bySocket(char ** prefix, int  * psocket){
+	long ret=0;
+	char* host=NULL;
 	if(!psocket) return ERROR;
-	return IRC_ComplexUser1459 (prefix, get_nick(*psocket), get_user(*psocket), get_host(psocket), NULL);
+	host = get_host(psocket);
+	ret = IRC_ComplexUser1459 (prefix, get_nick(*psocket), get_user(*psocket), host, NULL);
+	free(host);
+	return ret;
 
 }
 

@@ -211,6 +211,8 @@ int join(data* d){
 		return ERROR;
 	}
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	/*Liberar recursos*/
+	IRC_MFree(7, &reply, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
 	return OK;
 
 }
@@ -784,7 +786,6 @@ int mode(data *d){
  
 	//TODO esta comprobacion es mu cutre pero no se me ocurria nada mejor
 	if(mode[2] == 'k'){ //k - poner clave al canal
-		syslog(LOG_ERR,"IRCServ:  AQUIIIIIIIIIIII");
 		usermode = IRCTAD_GetUserModeOnChannel(channeluser, get_nick(d->socket));	
 		if(IRCUMODE_OPERATOR == (usermode & IRCUMODE_OPERATOR)){ //solo puedo cambiar si tengo permiso, si soy operador
 			IRCTADChan_SetPassword (channeluser, user);
