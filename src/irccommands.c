@@ -136,9 +136,10 @@ int user(data* d){
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int quit(data* d){
-	char *prefix = NULL, *msg = NULL, *prefix_s=NULL;
-	long res = 0;
-	char *reply = NULL;
+	char *prefix = NULL, *msg = NULL, *prefix_s = NULL, *reply = NULL;
+	char **listOfChannels, **listOfUsers;
+	long res = 0, numberOfChannels = 0, numberOfUsers = 0;
+	int i = 0, j = 0;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando QUIT %s", d->mensaje);
 	if((res = IRCParse_Quit (d->mensaje, &prefix, &msg) )!=IRC_OK){
@@ -161,8 +162,18 @@ int quit(data* d){
 	}
 	
 	IRCTAD_Quit(get_nick(d->socket));
-
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+	//mensaje a los usuarios que perteneciesen a un canal en el que estaba este user
+	IRCTAD_ListChannelsOfUserArray (get_user(d->socket), get_nick(d->socket), &listOfChannels, &numberOfChannels);
+	//TODO numberOfchannels es siempre 0??????? 
+    for(i=0; i<numberOfChannels; i++){
+		IRCTAD_ListNicksOnChannelArray(listOfChannels[i], &listOfUsers, &numberOfUsers);
+        for(j=0; j<numberOfUsers; j++) {
+			send(get_sock_by_user(listOfUsers[j]), reply, sizeof(char)*strlen(reply), 0);
+        }
+    }
+	
 
 	set_user(d->socket, NULL);
 	set_nick(d->socket, NULL);
@@ -180,9 +191,11 @@ int quit(data* d){
 
 int join(data* d){
 	
-	char *prefix, *prefix_s, *msg, *channel, *key, *usermode, *reply;
-	long res = 0;
-	prefix=prefix_s=msg=channel=key=usermode=reply=NULL;
+	char *prefix, *prefix_s, *msg, *channel, *key, *usermode, *reply, *reply2, *topic;
+	char **list;
+	int i = 0;
+	long res = 0, numberOfUsers = 0;
+	prefix=prefix_s=msg=channel=key=usermode=reply=reply2=topic=NULL;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando JOIN: %s", d->mensaje);
 
@@ -192,23 +205,51 @@ int join(data* d){
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 		return ERROR;
 	}
-	if ( (res = IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)) != IRC_OK){
-		if (res == IRCERR_FAIL){ //Si el canal tiene clave y el usuario no tiene los permisos
-				IRCMsg_ErrBadChannelKey (&reply, SERV_NAME, get_nick(d->socket), channel);
-				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-				return OK;
-		}
-		syslog(LOG_ERR, "IRCServ: Error en IRCTAD_Join, %ld", res);
-		return ERROR;
+
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
+
+	switch (IRCTAD_Join(channel, get_nick(d->socket), usermode ,key)){
+		case IRCERR_FAIL: //Si el canal tiene clave y el usuario no tiene los permisos
+			IRCMsg_ErrBadChannelKey (&reply, SERV_NAME, get_nick(d->socket), channel);
+			send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+			syslog(LOG_ERR, "IRCServ: Error en IRCTAD_Join, %ld", res);
+			break;
+		case IRC_OK:
+			syslog(LOG_INFO, "Usuario %s, se unio al canal %s", get_nick(d->socket), channel);
+
+			if ( IRCMsg_Join(&reply, prefix_s, msg, NULL, channel) != IRC_OK){
+				syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Join, %ld", res);
+				return ERROR;
+			}
+			send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+
+			//Mandamos al usuario que se conecta el topic del canal
+			IRCTAD_GetTopic(channel, &topic);
+		    if (topic!=NULL) {
+                IRCMsg_RplTopic(&reply2, prefix_s, get_nick(d->socket), channel, topic);
+				send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
+                free(reply2);
+            }
+
+			//Mostramos a todos los usuarios conectados que se ha conectado uno nuevo
+			IRCTAD_ListNicksOnChannelArray(channel, &list, &numberOfUsers);
+            for(i=0; i<numberOfUsers; i++){
+				if(get_sock_by_nick(list[i]) != d->socket){
+					send(get_sock_by_nick(list[i]), reply, sizeof(char)*strlen(reply), 0);
+				}
+            }
+			//Se lista al usuario conectados los que ya estaban en el canal
+			IRCMsg_RplNamReply (&reply2, SERV_NAME, get_nick(d->socket), "=", channel, "0");//campos a null xq no se q hasen
+			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
+            if(reply2) free(reply2);
+            IRCMsg_RplEndOfNames (&reply2, SERV_NAME, get_nick(d->socket), channel);
+			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
+			break;
+		default:
+			syslog(LOG_INFO, "IRCServ: Error desconocido en JOIN");
+            break;
 	}
 
-	syslog(LOG_INFO, "Usuario %s, se unio al canal %s", get_nick(d->socket), channel);
-	ComplexUser_bySocket(&prefix_s, &(d->socket));
-	if ( IRCMsg_Join(&reply, prefix_s, msg, NULL, channel) != IRC_OK){ //he cambiado key por NULL porque el mensaje no salia bien, mostraba la key y eso no tiene que hacerlo
-		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_Join, %ld", res);
-		return ERROR;
-	}
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	/*Liberar recursos*/
 	IRC_MFree(7, &reply, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
 	return OK;
