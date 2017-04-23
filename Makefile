@@ -60,6 +60,7 @@ $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c
 
 log:
 	tail -f /var/log/syslog | grep IRCServ
+
 .PHONY: clean
 clean:
 	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) 

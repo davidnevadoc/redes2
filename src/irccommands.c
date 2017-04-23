@@ -145,11 +145,11 @@ int quit(data* d){
 		syslog(LOG_ERR, "IRCServ: Error en el comando QUIT, %ld", res);
 		return ERROR;
 	}
-	/*TODO
+	
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
-	if(msg == NULL){ //Enviamos como mensaje por defecto el nick
-		nick = get_nick(d->socket);
-		if (IRCMsg_Quit (&reply, prefix_s, nick)!=IRC_OK ){
+	if(msg == NULL){ //Si no hay mensaje enviamos por defecto el nick
+		msg = get_nick(d->socket);
+		if (IRCMsg_Quit (&reply, prefix_s, msg)!=IRC_OK ){
 			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
 			return ERROR;
 		}
@@ -159,17 +159,15 @@ int quit(data* d){
 			return ERROR;
 		}
 	}
-	*/
+	
 	IRCTAD_Quit(get_nick(d->socket));
-	free(reply);
-	IRCMsg_Error(&reply, SERV_NAME, "Terminating");
+
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
 	set_user(d->socket, NULL);
 	set_nick(d->socket, NULL);
 	free(reply);
 	free(prefix);
-	free(msg);
 	free(prefix_s);
 	d->stop=1;
 	return OK;

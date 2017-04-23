@@ -28,9 +28,7 @@ void inicializaComandos(){
 	listaComandos[17] = motd;
 	listaComandos[33] = ping;
 	listaComandos[34] = pong;
-	listaComandos[36] = away;
-
-		
+	listaComandos[36] = away;	
 }
 
 
@@ -90,7 +88,7 @@ void * atiende_cliente(data* d){
 	syslog(LOG_INFO, "IRCServ: Se cerro la conexion %d", d->socket);
 	/*liberamos recursos*/
 	close(d->socket);
-	free_data(d);
+	//free_data(d); TODO ESTO NO FUNSIIIIONA
 	pthread_exit(NULL);
 }
 
