@@ -22,7 +22,6 @@ void inicializaComandos(){
 	listaComandos[10] = topic;
 	listaComandos[12] = list;
 	listaComandos[14] = kick;
-	listaComandos[29] = who;
 	listaComandos[30] = whois;
 	listaComandos[11] = names;
 	listaComandos[15] = privmsg;

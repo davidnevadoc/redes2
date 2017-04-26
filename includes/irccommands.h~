@@ -55,13 +55,6 @@ int list(data *d);
 *@param d Estructura de datos con la informacion del hilo
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-int who(data *d);
-
-/**
-*@brief Función que atiende al comando WHOIS
-*@param d Estructura de datos con la informacion del hilo
-*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
-*/
 int whois(data *d);
 
 /**

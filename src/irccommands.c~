@@ -621,7 +621,7 @@ int part(data *d){
 		IRCMsg_Part(&reply, prefix_s, channel, msg);
 		send(d->socket, reply, sizeof(char)* strlen(reply), 0);
 		IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
-		syslog(LOG_INFO, "IRCServ: ---------------------->%ld", nlist);
+		syslog(LOG_INFO, "IRCServ: ---------------------->%ld, nlist);
 		for(i=0;i<nlist;i++){
 			sockdest=get_sock_by_nick(list[i]);
 			if(sockdest!=d->socket){
