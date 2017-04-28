@@ -7,7 +7,6 @@
  *@param d Estructura de datos con la informacion del hilo
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-/*De momento solo muestra la contraseña introducida TODO*/
 int pass(data* d){
 	long res = 0;
 	char *prefix, *password;
@@ -161,16 +160,16 @@ int quit(data* d){
 		}
 	}
 	
+	IRCTAD_ListChannelsOfUserArray (NULL, get_nick(d->socket), &listOfChannels, &numberOfChannels);
+
 	IRCTAD_Quit(get_nick(d->socket));
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
 	//mensaje a los usuarios que perteneciesen a un canal en el que estaba este user
-	IRCTAD_ListChannelsOfUserArray (NULL, get_nick(d->socket), &listOfChannels, &numberOfChannels);
-	//TODO numberOfchannels es siempre 0??????? 
     for(i=0; i<numberOfChannels; i++){
 		IRCTAD_ListNicksOnChannelArray(listOfChannels[i], &listOfUsers, &numberOfUsers);
         for(j=0; j<numberOfUsers; j++) {
-			send(get_sock_by_user(listOfUsers[j]), reply, sizeof(char)*strlen(reply), 0);
+			send( get_sock_by_nick(listOfUsers[j]), reply, sizeof(char)*strlen(reply), 0);
         }
     }
 	
@@ -604,8 +603,7 @@ int pong(data *d){
 
 int part(data *d){
 	char * prefix, *channel, *msg, *reply, *prefix_s;
-	char **list=NULL;
-	char streply[MAXREPLY]={0};
+	char **list;
 	long res=0, nlist=0;
 	int i=0, sockdest =0;
 	prefix=channel=msg=reply=prefix_s=NULL;
@@ -615,18 +613,17 @@ int part(data *d){
 		return ERROR;
 	}
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
+
 	switch(res=IRCTAD_Part(channel, get_nick(d->socket))){
 		case IRC_OK :
 		syslog(LOG_INFO, "IRCServ: El usuario %s salio del canal %s", get_nick(d->socket), channel);
 		IRCMsg_Part(&reply, prefix_s, channel, msg);
 		send(d->socket, reply, sizeof(char)* strlen(reply), 0);
-		IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
-		syslog(LOG_INFO, "IRCServ: ---------------------->%ld", nlist);
 		for(i=0;i<nlist;i++){
-			sockdest=get_sock_by_nick(list[i]);
-			if(sockdest!=d->socket){
-				sprintf(streply, ":%s %s has quit",SERV_NAME, get_nick(d->socket));//TODO revisar esto
-				send(sockdest, streply, sizeof(char)*strlen(reply), 0);
+			sockdest = get_sock_by_nick(list[i]);
+			if(sockdest != d->socket){
+				send(sockdest, reply, sizeof(char)*strlen(reply), 0);
 			}
 			free(list[i]);
 		}
@@ -656,10 +653,10 @@ int part(data *d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int topic(data* d){
-	char *prefix, *channel , *topic, *reply, *mode;
+	char *prefix, *prefix_s, *channel , *topic, *reply, *mode;
 	long res = 0;
 	char streply[MAXREPLY]={0};
-	prefix=channel=topic=reply=mode=NULL;
+	prefix=prefix_s=channel=topic=reply=mode=NULL;
 	/*Log de ejecucion del comando*/
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando TOPIC: %s", d->mensaje);
 
@@ -669,32 +666,32 @@ int topic(data* d){
 	}
 	if(!channel){
 		syslog(LOG_INFO, "IRCServ: Canal no especificado TOPIC");
-		sprintf(streply, ":%s 461 %s %s :Needed more parameters\r\n", SERV_NAME,
+		sprintf(streply, ":%s 461 %s %s :Needed more parameters\r\n", prefix_s,
 		get_nick(d->socket), "TOPIC");
 		send(d->socket, streply,  sizeof(char)*strlen(streply), 0);
-		//IRC_MFree(4, prefix, channel, topic, reply);
+		IRC_MFree(4, &prefix, &channel, &topic, &reply);
 		return OK;
 	}
-	
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
 	if(topic == NULL){ 
 		IRCTAD_GetTopic (channel, &topic);
 		if(topic == NULL){//Canal sin topic anteriormente establecido
-			IRCMsg_RplNoTopic (&reply, SERV_NAME, get_nick(d->socket), channel);
+			IRCMsg_RplNoTopic (&reply, prefix_s, get_nick(d->socket), channel);
 		}else{//Mostramos el topic actual
-			IRCMsg_RplTopic (&reply, SERV_NAME, get_nick(d->socket), channel, topic);
+			IRCMsg_RplTopic (&reply, prefix_s, get_nick(d->socket), channel, topic);
 		}
 	}else{ //Cambio de topic
 		mode = IRCTADChan_GetModeChar(channel);
 		if(mode[0] == 't'){ // t - sólo los operadores de canal pueden cambiar el topic
 			res =IRCTAD_GetUserModeOnChannel (channel, get_nick(d->socket));
 			if(IRCUMODE_OPERATOR != (res & IRCUMODE_OPERATOR)){
-				IRCMsg_ErrChanOPrivsNeeded (&reply, SERV_NAME, get_nick(d->socket), channel);
+				IRCMsg_ErrChanOPrivsNeeded (&reply, prefix_s, get_nick(d->socket), channel);
 				send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 				return OK;
 			}
 		}
 		IRCTAD_SetTopic (channel, get_nick(d->socket), topic);
-		IRCMsg_Topic (&reply, SERV_NAME, channel, topic);
+		IRCMsg_Topic (&reply, prefix_s, channel, topic);
 	}
 
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
@@ -731,6 +728,7 @@ int kick(data* d){
 			syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
 			return ERROR;
 		} 
+
 
 		if ((res = IRCMsg_Kick (&reply, SERV_NAME, channel, user, comment)) != IRC_OK){
 			syslog(LOG_ERR, "IRCServ: Error en IRCTAD_KickUserFromChannel() %ld", res);
