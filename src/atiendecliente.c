@@ -89,7 +89,7 @@ void * atiende_cliente(data* d){
 	syslog(LOG_INFO, "IRCServ: Se cerro la conexion %d", d->socket);
 	/*liberamos recursos*/
 	close(d->socket);
-	//free_data(d); TODO ESTO NO FUNSIIIIONA
+	free_data(d); 
 	pthread_exit(NULL);
 }
 

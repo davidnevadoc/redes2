@@ -30,7 +30,6 @@ int pass(data* d){
  *@param d Estructura de datos con la informacion del hilo
  *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
-//TODO Especificar mas casos de error
 int nick(data* d){
 	/*Codigo de respuesta devuelto por las funciones de la libreria IRC*/
 	long res = 0;
@@ -147,9 +146,9 @@ int quit(data* d){
 	}
 	
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
-	if(msg == NULL){ //Si no hay mensaje enviamos por defecto el nick
-		msg = get_nick(d->socket);
-		if (IRCMsg_Quit (&reply, prefix_s, msg)!=IRC_OK ){
+
+	if(msg == NULL){ //Si no hay mensaje enviamos uno por defecto
+		if (IRCMsg_Quit (&reply, prefix_s, "Leaving")!=IRC_OK ){
 			syslog(LOG_ERR, "IRCServ: Error MsgQuit");
 			return ERROR;
 		}
@@ -159,13 +158,13 @@ int quit(data* d){
 			return ERROR;
 		}
 	}
-	
+	/*Antes de hacer el quit obtengo los canales a los que pertenecía el usuario*/
 	IRCTAD_ListChannelsOfUserArray (NULL, get_nick(d->socket), &listOfChannels, &numberOfChannels);
 
 	IRCTAD_Quit(get_nick(d->socket));
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
-	//mensaje a los usuarios que perteneciesen a un canal en el que estaba este user
+	/*mensaje a los usuarios que perteneciesen a un canal en el que estaba este usuario*/
     for(i=0; i<numberOfChannels; i++){
 		IRCTAD_ListNicksOnChannelArray(listOfChannels[i], &listOfUsers, &numberOfUsers);
         for(j=0; j<numberOfUsers; j++) {
@@ -173,7 +172,6 @@ int quit(data* d){
         }
     }
 	
-
 	set_user(d->socket, NULL);
 	set_nick(d->socket, NULL);
 	free(reply);
@@ -222,7 +220,7 @@ int join(data* d){
 			}
 			send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 
-			//Mandamos al usuario que se conecta el topic del canal
+			/*Mandamos al usuario que se conecta el topic del canal*/
 			IRCTAD_GetTopic(channel, &topic);
 		    if (topic!=NULL) {
                 IRCMsg_RplTopic(&reply2, prefix_s, get_nick(d->socket), channel, topic);
@@ -230,21 +228,18 @@ int join(data* d){
                 free(reply2);
             }
 
-			/*IRCMsg_Who (&reply2, prefix_s, channel, NULL);
-			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);*/
-
-			//Mostramos a todos los usuarios conectados que se ha conectado uno nuevo
+			/*Mostramos a todos los usuarios conectados que se ha conectado uno nuevo*/
 			IRCTAD_ListNicksOnChannelArray(channel, &list, &numberOfUsers);
             for(i=0; i<numberOfUsers; i++){
 				if(get_sock_by_nick(list[i]) != d->socket){
 					send(get_sock_by_nick(list[i]), reply, sizeof(char)*strlen(reply), 0);
 				}
             }
-			//Se lista al usuario conectados los que ya estaban en el canal
-			IRCMsg_RplNamReply (&reply2, SERV_NAME, get_nick(d->socket), "=", channel, "0");//campos a null xq no se q hasen
+			/*Se lista al usuario conectado los que ya estaban en el canal*/
+			IRCMsg_RplNamReply (&reply2, prefix_s, get_nick(d->socket), "=", channel, "0");
 			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
             if(reply2) free(reply2);
-            IRCMsg_RplEndOfNames (&reply2, SERV_NAME, get_nick(d->socket), channel);
+            IRCMsg_RplEndOfNames (&reply2, prefix_s, get_nick(d->socket), channel);
 			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
 			break;
 		default:
@@ -252,8 +247,8 @@ int join(data* d){
             break;
 	}
 
-	/*Liberar recursos*/
-	//IRC_MFree(7, &reply, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
+	/*Liberamos recursos*/
+	IRC_MFree(7, &reply, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
 	return OK;
 
 }
@@ -654,7 +649,9 @@ int part(data *d){
 */
 int topic(data* d){
 	char *prefix, *prefix_s, *channel , *topic, *reply, *mode;
-	long res = 0;
+	char **list;
+	int sockdest = 0, i = 0;
+	long res = 0, nlist = 0;
 	char streply[MAXREPLY]={0};
 	prefix=prefix_s=channel=topic=reply=mode=NULL;
 	/*Log de ejecucion del comando*/
@@ -673,6 +670,7 @@ int topic(data* d){
 		return OK;
 	}
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
+
 	if(topic == NULL){ 
 		IRCTAD_GetTopic (channel, &topic);
 		if(topic == NULL){//Canal sin topic anteriormente establecido
@@ -693,9 +691,18 @@ int topic(data* d){
 		IRCTAD_SetTopic (channel, get_nick(d->socket), topic);
 		IRCMsg_Topic (&reply, prefix_s, channel, topic);
 	}
-
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	//Notificamos a los usuarios del canal del cambio/introduccion del topic
+	IRCTAD_ListNicksOnChannelArray(channel, &list, &nlist);
+	for(i=0;i<nlist;i++){
+		sockdest = get_sock_by_nick(list[i]);
+		if(sockdest != d->socket){
+			send(sockdest, reply, sizeof(char)*strlen(reply), 0);
+		}
+		free(list[i]);
+	}
 	/*Liberamos recursos*/
+	free(list);
 	free(prefix);
 	free(topic);
 	free(reply);
