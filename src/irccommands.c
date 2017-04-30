@@ -188,11 +188,11 @@ int quit(data* d){
 
 int join(data* d){
 	
-	char *prefix, *prefix_s, *msg, *channel, *key, *usermode, *reply, *reply2, *topic;
-	char **list;
-	int i = 0;
+	char *prefix, *prefix_s, *msg, *channel, *key, *usermode, *reply, *reply2, *topic, *list2;
+	char **list, type[5];
+	int i = 0, mode = 0;
 	long res = 0, numberOfUsers = 0;
-	prefix=prefix_s=msg=channel=key=usermode=reply=reply2=topic=NULL;
+	prefix=prefix_s=msg=channel=key=usermode=reply=reply2=list2=topic=NULL;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando JOIN: %s", d->mensaje);
 
@@ -235,11 +235,17 @@ int join(data* d){
 					send(get_sock_by_nick(list[i]), reply, sizeof(char)*strlen(reply), 0);
 				}
             }
-			/*Se lista al usuario conectado los que ya estaban en el canal*/
-			IRCMsg_RplNamReply (&reply2, prefix_s, get_nick(d->socket), "=", channel, "0");
+			/*Se lista al usuario conectado los que ya estaban en el canal (el incluido)*/
+		    mode = IRCTAD_GetUserModeOnChannel(channel, get_nick(d->socket));
+			bzero(type, 5);
+			strcpy(type, "H");
+			if((mode & IRCUMODE_VOICE) == IRCUMODE_VOICE) strcat(type, "+");
+			if((mode & IRCUMODE_OPERATOR) == IRCUMODE_OPERATOR) strcat(type, "@");
+			IRCTAD_ListNicksOnChannel(channel, &list2, &numberOfUsers);
+			IRCMsg_RplNamReply (&reply2, prefix_s, get_nick(d->socket), type, channel, list2);
 			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
-            if(reply2) free(reply2);
-            IRCMsg_RplEndOfNames (&reply2, prefix_s, get_nick(d->socket), channel);
+		    if(reply2) free(reply2);
+	        IRCMsg_RplEndOfNames (&reply2, prefix_s,get_nick(d->socket), channel);
 			send(d->socket, reply2, sizeof(char)*strlen(reply2), 0);
 			break;
 		default:
@@ -248,7 +254,7 @@ int join(data* d){
 	}
 
 	/*Liberamos recursos*/
-	IRC_MFree(7, &reply, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
+	IRC_MFree(8, &reply, &reply2, &prefix_s, &prefix, &channel, &key, &msg, &usermode);
 	return OK;
 
 }
@@ -335,37 +341,51 @@ int list (data *d){
 	return OK;
 }
 /**
-*@brief Función que atiende al comando WHOIS
+*@brief Función que atiende al comando WHO
 *@param d Estructura de datos con la informacion del hilo
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int who(data *d){
 	char *prefix, *prefix_s, *mask, *oppar, *reply;
-	char *user, *maskarray, *real, *host, *ip, *away;
+	char *user, *real, *host, *ip, *away;
 	char **list;
-	int i = 0, socket = 0;
-	long res = 0, nlist = 0, creationTS = 0, actionTS = 0, id = 0;
-
-	prefix=prefix_s=mask=oppar=reply=NULL;
+	char type[5] = {0};
+	int i = 0, socket = 0, mode = 0;
+	long  res = 0, nlist = 0, creationTS = 0, actionTS = 0, id = 0;
+	prefix=prefix_s=mask=oppar=reply=user=real=host=ip=away=NULL;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando WHO: %s", d->mensaje);
+
 
 	res = IRCParse_Who (d->mensaje, &prefix, &mask, &oppar);
 	if ( res != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de who %ld", res);
 		return ERROR;
 	}
-	syslog(LOG_ERR, "IRCServ: ----------> parametro who %s", mask);
+
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	
 	IRCTAD_ListNicksOnChannelArray(mask, &list, &nlist);
-	IRCTADUser_GetData (&id, &user, &maskarray, &real, &host, &ip, &socket, &creationTS, &actionTS, &away);
 	for(i = 0; i < nlist; i++){
-		IRCMsg_RplWhoReply(&reply, prefix_s, list[i], mask, user, host, prefix_s, list[i], NULL, 0, real);
+		/*IRCMsg_RplNamReply (&reply, prefix_s, list[i], "type", mask, list[i]);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		if(reply) free(reply);
+		IRCMsg_RplEndOfNames (&reply, prefix_s, list[i], mask);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+		if(reply) free(reply);*/
+
+		res = IRCTADUser_GetData (&id, &user, &list[i], &real, &host, &ip, &socket, &creationTS, &actionTS, &away);
+
+		mode = IRCTAD_GetUserModeOnChannel(mask, list[i]);
+		bzero(type, 5);
+		strcpy(type, "H");
+		if((mode & IRCUMODE_VOICE) == IRCUMODE_VOICE) strcat(type, "+");
+		if((mode & IRCUMODE_OPERATOR) == IRCUMODE_OPERATOR) strcat(type, "@");
+
+		res = IRCMsg_RplWhoReply(&reply, prefix_s, list[i], mask, get_user(get_sock_by_nick(list[i])), host, prefix_s, list[i], type, 0, NULL);
 		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
 	}
-	
-	//IRCMsg_RplWhoReply (&reply, prefix, char * nick, char *channel, char *user, char *host, char * server, char *nick2, char *type, char *hopcount,  char * realname);
-	
+
 	if(reply) free(reply);
 	IRCMsg_RplEndOfWho (&reply, prefix_s, get_nick(d->socket), mask);
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
@@ -477,7 +497,7 @@ int names(data* d){
 		return OK;
 	}
 
-	if( (res = IRCMsg_RplNamReply (&reply, SERV_NAME, get_nick(d->socket), "type", channel, list)) != IRC_OK){//TODO si pongo null peta, asi que dejo type.
+	if( (res = IRCMsg_RplNamReply (&reply, SERV_NAME, get_nick(d->socket), "type", channel, list)) != IRC_OK){
 		syslog(LOG_ERR, "IRCServ: Error en IRCMsg_RplNamReply(): %ld", res);
 		return ERROR;
 	} 
