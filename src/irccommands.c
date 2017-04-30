@@ -340,10 +340,13 @@ int list (data *d){
 *@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
 */
 int who(data *d){
-	char *prefix, *mask, *oppar, *reply;
-	long res = 0;
+	char *prefix, *prefix_s, *mask, *oppar, *reply;
+	char *user, *maskarray, *real, *host, *ip, *away;
+	char **list;
+	int i = 0, socket = 0;
+	long res = 0, nlist = 0, creationTS = 0, actionTS = 0, id = 0;
 
-	prefix=mask=oppar=reply=NULL;
+	prefix=prefix_s=mask=oppar=reply=NULL;
 
 	syslog(LOG_INFO,"IRCServ: Se ejecuta el comando WHO: %s", d->mensaje);
 
@@ -352,14 +355,22 @@ int who(data *d){
 		syslog(LOG_ERR, "IRCServ: Error en el parseo de who %ld", res);
 		return ERROR;
 	}
-
-	/*IRCMsg_RplWhoReply (&reply, prefix, char * nick, char *channel, char *user, char *host, char * server, char *nick2, char *type, char *hopcount,  char * realname);
+	syslog(LOG_ERR, "IRCServ: ----------> parametro who %s", mask);
+	ComplexUser_bySocket(&prefix_s, &(d->socket));
+	IRCTAD_ListNicksOnChannelArray(mask, &list, &nlist);
+	IRCTADUser_GetData (&id, &user, &maskarray, &real, &host, &ip, &socket, &creationTS, &actionTS, &away);
+	for(i = 0; i < nlist; i++){
+		IRCMsg_RplWhoReply(&reply, prefix_s, list[i], mask, user, host, prefix_s, list[i], NULL, 0, real);
+		send(d->socket, reply, sizeof(char)*strlen(reply), 0);
+	}
+	
+	//IRCMsg_RplWhoReply (&reply, prefix, char * nick, char *channel, char *user, char *host, char * server, char *nick2, char *type, char *hopcount,  char * realname);
+	
+	if(reply) free(reply);
+	IRCMsg_RplEndOfWho (&reply, prefix_s, get_nick(d->socket), mask);
 	send(d->socket, reply, sizeof(char)*strlen(reply), 0);
-	free(reply);
-	IRCMsg_RplEndOfWho (&reply, prefix, get_nick(d->socket), char *name);
-	send(d->socket, reply, sizeof(char)*strlen(reply), 0);*/
 
-	IRC_MFree(4, &reply, &prefix, &mask, &oppar);
+	IRC_MFree(5, &prefix_s, &reply, &prefix, &mask, &oppar);
 	return OK;
 }
 

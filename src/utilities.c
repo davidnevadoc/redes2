@@ -30,11 +30,8 @@ data * data_init(int connfd){
 }
 
 void free_data( data * d){
-	//free(d->mensaje); 
 	free(d->IP);
-	//UFreeUser(d->usuario);
 	free(d);
-
 }
 
 
