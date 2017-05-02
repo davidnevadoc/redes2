@@ -1,9 +1,7 @@
-
 /**
- * Cabecera de ircserver.c
  * @brief Biblioteca de semaforos
  * @file ircserver.h
- * @author Maria Prieto
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
  * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
  * @date 12/02/2017
  */

@@ -1,3 +1,11 @@
+/**
+ * @brief 
+ * @file tcpechoserver.h
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
+
 #ifndef TCPECHOSERVER_H
 #define TCPECHOSERVER_H
 

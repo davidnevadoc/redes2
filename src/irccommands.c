@@ -1,3 +1,11 @@
+/**
+ * @brief 
+ * @file irccommands.c
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
+
 #include "../includes/irccommands.h"
 
 #include <redes2/irc.h>

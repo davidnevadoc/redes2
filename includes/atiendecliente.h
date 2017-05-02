@@ -1,3 +1,12 @@
+/**
+ * @brief 
+ * @file atiendecliente.h
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
+
+
 #ifndef ATIENDECLIENTE_H
 #define ATIENDECLIENTE_H
 

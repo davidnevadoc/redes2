@@ -1,6 +1,4 @@
-
 /**
- * 
  * @brief Funciones de manejo de variables globales
  * @file ircserver.c
  * @author Maria Prieto
@@ -243,9 +241,8 @@ char * get_host(int * sockfd){
 
 }
 /**
- * Wrapper para la funcion IRC_ComplexUser1459. Devuelve el prefijo de un usuario
+ * @bridef Wrapper para la funcion IRC_ComplexUser1459. Devuelve el prefijo de un usuario
  * utilizando unicamente el identificador del socket
- * @bridef Devuelve el prfijo de un usuario asociado a un socket
  * @param prefix Puntero a la cadena de caracteres donde se almacena el prefijo obtenido,
  * 	es decir, el prefijo asociado al socket
  *	  psocket Puntero al socket del usuario cuyo prefijo se quiere obtener

@@ -1,11 +1,9 @@
 /**
- * Version 0 del sevidor IRC
- *
  * @brief Servidor IRC v0.0
- * @author Maria Prieto
- * @author David Nevado Catalan
  * @file main.c
- * @date 12/02/2017
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
  */
 
 #include "../includes/main.h"

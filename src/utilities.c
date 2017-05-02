@@ -1,6 +1,18 @@
+/**
+ * @brief 
+ * @file utilities.c
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
+
 #include "../includes/utilities.h"
 
-
+/**
+ * @brief Funcion que inicializa los valores de un usuario 
+ * @param connfd valor del socket
+ * @return devuelve al usuario
+ */
 User * user_init(int connfd){
 	User * user = NULL;
 	if( (user = (User *) malloc(sizeof(User))) ==NULL ) return NULL;
@@ -17,6 +29,11 @@ User * user_init(int connfd){
 	return user;
 }
 
+/**
+ * @brief Funcion que inicializa la estructura de datos data
+ * @param connfd valor del socket
+ * @return estructura de datos data inicializada
+ */
 data * data_init(int connfd){
 	data * d =NULL;
 	if ( (d = malloc(sizeof(data))) == NULL) return NULL;
@@ -29,6 +46,10 @@ data * data_init(int connfd){
 
 }
 
+/**
+ * @brief Funcion que libera la estructura de datos data 
+ * @param d Estructura de datos data
+ */
 void free_data( data * d){
 	free(d->IP);
 	free(d);

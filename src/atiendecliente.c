@@ -1,3 +1,11 @@
+/**
+ * @brief 
+ * @file atiendecliente.c
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
+
 
 #include "../includes/atiendecliente.h"
 /*Lista con los comandos disponibles,*/ 
@@ -96,11 +104,10 @@ void * atiende_cliente(data* d){
 
 /**
 *
-* Wrapper de la funcion atiende_cliente. Se encarga de reservar memoria para la 
+* @brief Wrapper de la funcion atiende_cliente. Se encarga de reservar memoria para la 
 * estructura que se pasa a la funcion atiende_cliente, asi como de gestionar 
 * los hilos y hacer diversos controles de error.
 *
-*@brief Wrapper de la funcion atiende_cliente
 *@param cli sockaddr con direccion del socket del cliente que establecio la conexion
 *
 *@return Devuelve SUCCESS si todo va bien, ERROR en caso contrario

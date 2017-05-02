@@ -1,3 +1,10 @@
+/**
+ * @brief 
+ * @file irccommands.h
+ * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
+ * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
+ * @date 02/05/2017
+ */
 
 #ifndef IRCCOMMANDS_H
 #define IRCCOMMANDS_H
@@ -71,9 +78,32 @@ int whois(data *d);
 */
 int names(data *d);
 
+/**
+*@brief Función que atiende al comando PRIVMSG
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int privmsg(data *d);
+
+/**
+*@brief Función que atiende al comando PING
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int ping(data *d);
+
+/**
+*@brief Función que atiende al comando PONG
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int pong(data *d);
+
+/**
+*@brief Función que atiende al comando PART
+*@param d Estructura de datos con la informacion del hilo
+*@return OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+*/
 int part(data *d);
 
 /**
