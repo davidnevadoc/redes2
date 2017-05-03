@@ -1,0 +1,81 @@
+.TH "src/G-2302-05-P1-utilities.c" 3 "Wed May 3 2017" "Redes 2" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/G-2302-05-P1-utilities.c \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include '\&.\&./includes/G-2302-05-P1-utilities\&.h'\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "User * \fBuser_init\fP (int connfd)"
+.br
+.RI "\fIFuncion que inicializa los valores de un usuario\&. \fP"
+.ti -1c
+.RI "\fBdata\fP * \fBdata_init\fP (int connfd)"
+.br
+.RI "\fIFuncion que inicializa la estructura de datos data\&. \fP"
+.ti -1c
+.RI "void \fBfree_data\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFuncion que libera la estructura de datos data\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "AUTHOR"
+.PP
+Maria Prieto Gil maria.prietogil@estudiante.uam.es 
+.SH "AUTHOR"
+.PP
+David Nevado Catalan david.nevadoc@estudiante.uam.es 
+.SH "DATE"
+.PP
+02/05/2017 
+.SH "Function Documentation"
+.PP 
+.SS "\fBdata\fP* data_init (intconnfd)"
+
+.PP
+Funcion que inicializa la estructura de datos data\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIconnfd\fP valor del socket 
+.RE
+.PP
+.SH "RETURN"
+.PP
+estructura de datos data inicializada 
+.SS "void free_data (\fBdata\fP *d)"
+
+.PP
+Funcion que libera la estructura de datos data\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos data 
+.RE
+.PP
+
+.SS "User* user_init (intconnfd)"
+
+.PP
+Funcion que inicializa los valores de un usuario\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIconnfd\fP valor del socket 
+.RE
+.PP
+.SH "RETURN"
+.PP
+devuelve al usuario 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Redes 2 from the source code\&.

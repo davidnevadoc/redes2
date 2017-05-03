@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['set_5fnick',['set_nick',['../ircserver_8c.html#ad82de975d2c67f555bfb5944347a9d38',1,'set_nick(int sockfd, char *nick):&#160;ircserver.c'],['../ircserver_8h.html#ad82de975d2c67f555bfb5944347a9d38',1,'set_nick(int sockfd, char *nick):&#160;ircserver.c']]],
-  ['set_5fuser',['set_user',['../ircserver_8c.html#ad668fd43037b25eff4d1a5170dcb6017',1,'set_user(int sockfd, char *user):&#160;ircserver.c'],['../ircserver_8h.html#ad668fd43037b25eff4d1a5170dcb6017',1,'set_user(int sockfd, char *user):&#160;ircserver.c']]]
+  ['inicializacomandos',['inicializaComandos',['../G-2302-05-P1-atiendecliente_8c.html#a7a566186948eb79f245269210c86d263',1,'G-2302-05-P1-atiendecliente.c']]],
+  ['init_5fvar',['init_var',['../G-2302-05-P1-ircserver_8c.html#a7a201d8721069e7ca2a2e3c597bfb306',1,'init_var(void):&#160;G-2302-05-P1-ircserver.c'],['../G-2302-05-P1-ircserver_8h.html#a7a201d8721069e7ca2a2e3c597bfb306',1,'init_var(void):&#160;G-2302-05-P1-ircserver.c']]]
 ];

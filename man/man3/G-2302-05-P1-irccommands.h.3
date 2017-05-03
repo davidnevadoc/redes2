@@ -1,0 +1,390 @@
+.TH "includes/G-2302-05-P1-irccommands.h" 3 "Wed May 3 2017" "Redes 2" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+includes/G-2302-05-P1-irccommands.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include 'G-2302-05-P1-ircserver\&.h'\fP
+.br
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBMAXREPLY\fP   256"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBpass\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando PASS\&. \fP"
+.ti -1c
+.RI "int \fBnick\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando NICK\&. \fP"
+.ti -1c
+.RI "int \fBuser\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando USER\&. \fP"
+.ti -1c
+.RI "int \fBquit\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando QUIT\&. \fP"
+.ti -1c
+.RI "int \fBjoin\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando JOIN\&. \fP"
+.ti -1c
+.RI "int \fBlist\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando LIST\&. \fP"
+.ti -1c
+.RI "int \fBwho\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando WHOIS\&. \fP"
+.ti -1c
+.RI "int \fBwhois\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando WHOIS\&. \fP"
+.ti -1c
+.RI "int \fBnames\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando NAMES\&. \fP"
+.ti -1c
+.RI "int \fBprivmsg\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando PRIVMSG\&. \fP"
+.ti -1c
+.RI "int \fBping\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando PING\&. \fP"
+.ti -1c
+.RI "int \fBpong\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando PONG\&. \fP"
+.ti -1c
+.RI "int \fBpart\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando PART\&. \fP"
+.ti -1c
+.RI "int \fBtopic\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando TOPIC\&. \fP"
+.ti -1c
+.RI "int \fBkick\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando KICK\&. \fP"
+.ti -1c
+.RI "int \fBaway\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando AWAY\&. \fP"
+.ti -1c
+.RI "int \fBmotd\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando MOTD\&. \fP"
+.ti -1c
+.RI "int \fBmode\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando MODE\&. \fP"
+.ti -1c
+.RI "int \fBdisconnect\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFuncion para la desconexion abrupta\&. \fP"
+.ti -1c
+.RI "int \fBcomandoDefault\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFunción que atiende al comando por defecto\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "AUTHOR"
+.PP
+Maria Prieto Gil maria.prietogil@estudiante.uam.es 
+.SH "AUTHOR"
+.PP
+David Nevado Catalan david.nevadoc@estudiante.uam.es 
+.SH "DATE"
+.PP
+02/05/2017 
+.SH "Function Documentation"
+.PP 
+.SS "int away (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando AWAY\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int comandoDefault (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando por defecto\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int disconnect (\fBdata\fP *d)"
+
+.PP
+Funcion para la desconexion abrupta\&. Esta funcion cierra la conexion cuando detecta que el cliente se ha desconectado de forma abrupta 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIEstructura\fP de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int join (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando JOIN\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int kick (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando KICK\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int list (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando LIST\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int mode (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando MODE\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int motd (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando MOTD\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int names (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando NAMES\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int nick (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando NICK\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int part (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando PART\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int pass (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando PASS\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int ping (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando PING\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int pong (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando PONG\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int privmsg (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando PRIVMSG\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int quit (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando QUIT\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int topic (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando TOPIC\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int user (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando USER\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int who (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando WHOIS\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso
+.PP
+Función que atiende al comando WHOIS\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SS "int whois (\fBdata\fP *d)"
+
+.PP
+Función que atiende al comando WHOIS\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos con la informacion del hilo 
+.RE
+.PP
+.SH "RETURN"
+.PP
+OK si el comando se ejecuto de forma correcta, ERROR en otro caso 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Redes 2 from the source code\&.

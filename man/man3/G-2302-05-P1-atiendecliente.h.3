@@ -1,0 +1,80 @@
+.TH "includes/G-2302-05-P1-atiendecliente.h" 3 "Wed May 3 2017" "Redes 2" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+includes/G-2302-05-P1-atiendecliente.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <pthread\&.h>\fP
+.br
+\fC#include 'G-2302-05-P1-ircserver\&.h'\fP
+.br
+\fC#include 'G-2302-05-P1-irccommands\&.h'\fP
+.br
+
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fBIPV4ADDRSIZE\fP   4"
+.br
+.ti -1c
+.RI "#define \fBIPV6ADDRSIZE\fP   16"
+.br
+.ti -1c
+.RI "#define \fBBUFF_SIZE\fP   500"
+.br
+.ti -1c
+.RI "#define \fBNUM_COMANDOS\fP   50"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBAtiende_cliente\fP (struct sockaddr cli, int connfd)"
+.br
+.RI "\fIWrapper de la funcion atiende_cliente\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "AUTHOR"
+.PP
+Maria Prieto Gil maria.prietogil@estudiante.uam.es 
+.SH "AUTHOR"
+.PP
+David Nevado Catalan david.nevadoc@estudiante.uam.es 
+.SH "DATE"
+.PP
+02/05/2017 
+.SH "Function Documentation"
+.PP 
+.SS "int Atiende_cliente (struct sockaddrcli, intconnfd)"
+
+.PP
+Wrapper de la funcion atiende_cliente\&. 
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcli\fP sockaddr con direccion del socket del cliente que establecio la conexion
+.RE
+.PP
+.SH "RETURN"
+.PP
+Devuelve SUCCESS si todo va bien, ERROR en caso contrario Wrapper de la funcion atiende_cliente\&. Se encarga de reservar memoria para la estructura que se pasa a la funcion atiende_cliente, asi como de gestionar los hilos y hacer diversos controles de error\&.
+.PP
+Wrapper de la funcion atiende_cliente\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcli\fP sockaddr con direccion del socket del cliente que establecio la conexion
+.RE
+.PP
+.SH "RETURN"
+.PP
+Devuelve SUCCESS si todo va bien, ERROR en caso contrario 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Redes 2 from the source code\&.

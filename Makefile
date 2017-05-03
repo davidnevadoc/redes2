@@ -9,25 +9,25 @@ SDIR=src
 ODIR=obj
 DDIR=inlude
 
-_DEPS = udpechoserver.h tcpechoserver.h ircserver.h  main.h irccommands.h atiendecliente.h utilities.h
+_DEPS = G-2302-05-P1-udpechoserver.h G-2302-05-P1-tcpechoserver.h G-2302-05-P1-ircserver.h  G-2302-05-P1-main.h G-2302-05-P1-irccommands.h G-2302-05-P1-atiendecliente.h G-2302-05-P1-utilities.h
 DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
 
 #UDP echo server 
-_UESOURCES = udpechoserver.c 
+_UESOURCES = G-2302-05-P1-udpechoserver.c 
 UESOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 
 _UEOBJS = $(patsubst %.c, %.o, $(_UESOURCES))
 UEOBJS = $(patsubst %,$(ODIR)/%,$(_UEOBJS))
 
 #TCP echo server
-_TESOURCES = tcpechoserver.c
+_TESOURCES = G-2302-05-P1-tcpechoserver.c
 TESOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 
 _TEOBJS = $(patsubst %.c, %.o, $(_TESOURCES))
 TEOBJS = $(patsubst %,$(ODIR)/%,$(_TEOBJS))
 
 #IRC server
-_IRCSOURCES = main.c irccommands.c atiendecliente.c utilities.c ircserver.c
+_IRCSOURCES = G-2302-05-P1-main.c G-2302-05-P1-irccommands.c G-2302-05-P1-atiendecliente.c G-2302-05-P1-utilities.c G-2302-05-P1-ircserver.c
 IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 
 _IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))
@@ -61,7 +61,8 @@ $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c
 log:
 	tail -f /var/log/syslog | grep IRCServ
 
-doc:
+doc:	
+	@echo "Generando documentación..."
 	doxygen
 
 .PHONY: clean

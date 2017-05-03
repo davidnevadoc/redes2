@@ -1,0 +1,75 @@
+.TH "src/G-2302-05-P1-atiendecliente.c" 3 "Wed May 3 2017" "Redes 2" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/G-2302-05-P1-atiendecliente.c \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include '\&.\&./includes/G-2302-05-P1-atiendecliente\&.h'\fP
+.br
+
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "void \fBinicializaComandos\fP ()"
+.br
+.RI "\fIFunción que inicializa el array de funciones con los comandos disponibles\&. \fP"
+.ti -1c
+.RI "void * \fBatiende_cliente\fP (\fBdata\fP *d)"
+.br
+.RI "\fIFuncion que atiende cada conexion\&. \fP"
+.ti -1c
+.RI "int \fBAtiende_cliente\fP (struct sockaddr cli, int connfd)"
+.br
+.RI "\fIWrapper de la funcion atiende_cliente\&. Se encarga de reservar memoria para la estructura que se pasa a la funcion atiende_cliente, asi como de gestionar los hilos y hacer diversos controles de error\&. \fP"
+.in -1c
+.SS "Variables"
+
+.in +1c
+.ti -1c
+.RI "int(* \fBlistaComandos\fP [NUM_COMANDOS])(\fBdata\fP *)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "AUTHOR"
+.PP
+Maria Prieto Gil maria.prietogil@estudiante.uam.es 
+.SH "AUTHOR"
+.PP
+David Nevado Catalan david.nevadoc@estudiante.uam.es 
+.SH "DATE"
+.PP
+02/05/2017 
+.SH "Function Documentation"
+.PP 
+.SS "void* atiende_cliente (\fBdata\fP *d)"
+
+.PP
+Funcion que atiende cada conexion\&. Funcion INTERNA ejecutada por cada hilo que atiende una conexion\&. Define el servicio basico del sevidor
+.PP
+\fBParameters:\fP
+.RS 4
+\fId\fP Estructura de datos data 
+.RE
+.PP
+
+.SS "int Atiende_cliente (struct sockaddrcli, intconnfd)"
+
+.PP
+Wrapper de la funcion atiende_cliente\&. Se encarga de reservar memoria para la estructura que se pasa a la funcion atiende_cliente, asi como de gestionar los hilos y hacer diversos controles de error\&. Wrapper de la funcion atiende_cliente\&.
+.PP
+\fBParameters:\fP
+.RS 4
+\fIcli\fP sockaddr con direccion del socket del cliente que establecio la conexion
+.RE
+.PP
+.SH "RETURN"
+.PP
+Devuelve SUCCESS si todo va bien, ERROR en caso contrario 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Redes 2 from the source code\&.
