@@ -33,15 +33,21 @@ IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 _IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))
 IRCOBJS = $(patsubst %,$(ODIR)/%,$(_IRCOBJS))
 
+#SSL
+ROOT_SSL=certs/ca.sh
+SERVER_SSL=certs/server.sh
+CLIENT_SSL=certs/client.sh
+
+
 OBJS= $(UEOBJS) $(TEOBJS) $(IRCOBJS)
 
 
 all: $(IRC)
 	@echo "#--------------------------"
-	@echo " Redes 2"
-	@echo " Pareja 05"
-	@echo " David Nevado"
-	@echo " Maria Prieto"
+	@echo "          Redes 2"
+	@echo "         Pareja 05"
+	@echo "        David Nevado"
+	@echo "        Maria Prieto"
 	@echo "#--------------------------"
 
 $(UDPECHO): $(UEOBJS)
@@ -57,13 +63,23 @@ $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS) 
 
 
+certificados:
+	rm -f certs/*.pem certs/ca/*.pem certs/client/*.pem certs/server/*.pem
+	@echo "Generando certificado raíz para la CA..."
+	./$(ROOT_SSL)
+	@echo "Generando certificado del servidor..."
+	./$(SERVER_SSL)
+	@echo "Generando certificado del cliente..."
+	./$(CLIENT_SSL)
 
 log:
 	tail -f /var/log/syslog | grep IRCServ
 
-doc:	
+doc:
 	@echo "Generando documentación..."
 	doxygen
+
+
 
 .PHONY: clean
 clean:
