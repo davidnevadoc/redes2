@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['free_5fall',['free_all',['../G-2302-05-P1-ircserver_8c.html#a506df742641c3db2e00869a5c2f4dcd9',1,'free_all(void):&#160;G-2302-05-P1-ircserver.c'],['../G-2302-05-P1-ircserver_8h.html#a506df742641c3db2e00869a5c2f4dcd9',1,'free_all(void):&#160;G-2302-05-P1-ircserver.c']]],
-  ['free_5fdata',['free_data',['../G-2302-05-P1-utilities_8c.html#aaf017a31ddc3d1098204e439f8f68ff5',1,'free_data(data *d):&#160;G-2302-05-P1-utilities.c'],['../G-2302-05-P1-utilities_8h.html#aaf017a31ddc3d1098204e439f8f68ff5',1,'free_data(data *d):&#160;G-2302-05-P1-utilities.c']]]
+  ['enviar_5fdatos_5fssl',['enviar_datos_SSL',['../G-2302-05-P3-ssl__tools_8c.html#a7955414a62bcab701b71b6c460a6f143',1,'enviar_datos_SSL(int socket, void *buf):&#160;G-2302-05-P3-ssl_tools.c'],['../G-2302-05-P3-ssl__tools_8h.html#a7955414a62bcab701b71b6c460a6f143',1,'enviar_datos_SSL(int socket, void *buf):&#160;G-2302-05-P3-ssl_tools.c']]],
+  ['evaluar_5fpost_5fconnectar_5fssl',['evaluar_post_connectar_SSL',['../G-2302-05-P3-ssl__tools_8c.html#a94bfd278d5d4895abbacb52bf5f3cdd2',1,'evaluar_post_connectar_SSL(int socket):&#160;G-2302-05-P3-ssl_tools.c'],['../G-2302-05-P3-ssl__tools_8h.html#a94bfd278d5d4895abbacb52bf5f3cdd2',1,'evaluar_post_connectar_SSL(int socket):&#160;G-2302-05-P3-ssl_tools.c']]]
 ];

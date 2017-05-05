@@ -1,8 +1,8 @@
-digraph "src/G-2302-05-P1-atiendecliente.c"
+digraph "srclib/G-2302-05-P1-atiendecliente.c"
 {
   edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
   node [fontname="Helvetica",fontsize="10",shape=record];
-  Node1 [label="src/G-2302-05-P1-atiendecliente.c",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 [label="srclib/G-2302-05-P1\l-atiendecliente.c",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
   Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
   Node2 [label="../includes/G-2302\l-05-P1-atiendecliente.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-atiendecliente_8h.html"];
   Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];

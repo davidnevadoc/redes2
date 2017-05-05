@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['who',['who',['../G-2302-05-P1-irccommands_8c.html#a8568581412794fa80d996185624b2b54',1,'who(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a8568581412794fa80d996185624b2b54',1,'who(data *d):&#160;G-2302-05-P1-irccommands.c']]],
-  ['whois',['whois',['../G-2302-05-P1-irccommands_8c.html#a6a2f50be3c3d4d84f4dcdc3578275ad6',1,'whois(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a6a2f50be3c3d4d84f4dcdc3578275ad6',1,'whois(data *d):&#160;G-2302-05-P1-irccommands.c']]]
+  ['taudio_5fdata',['taudio_data',['../structtaudio__data.html',1,'']]],
+  ['thread_5fsend_5fdata',['thread_send_data',['../structthread__send__data.html',1,'']]],
+  ['topic',['topic',['../G-2302-05-P1-irccommands_8c.html#a36ade76aa35bc3748a02451fb2c747a8',1,'topic(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a36ade76aa35bc3748a02451fb2c747a8',1,'topic(data *d):&#160;G-2302-05-P1-irccommands.c']]],
+  ['trcv_5ffile_5fdata',['trcv_file_data',['../structtrcv__file__data.html',1,'']]]
 ];

@@ -4,9 +4,7 @@ digraph "includes/G-2302-05-P1-atiendecliente.h"
   node [fontname="Helvetica",fontsize="10",shape=record];
   Node1 [label="includes/G-2302-05\l-P1-atiendecliente.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
   Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node2 [label="src/G-2302-05-P1-atiendecliente.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-atiendecliente_8c.html"];
+  Node2 [label="includes/G-2302-05\l-P1-main.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-main_8h.html"];
   Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node3 [label="includes/G-2302-05\l-P1-main.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-main_8h.html"];
-  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
-  Node4 [label="src/G-2302-05-P1-main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-main_8c.html",tooltip="Servidor IRC v0.0. "];
+  Node3 [label="srclib/G-2302-05-P1\l-atiendecliente.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$G-2302-05-P1-atiendecliente_8c.html"];
 }

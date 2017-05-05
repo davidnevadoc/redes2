@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['names',['names',['../G-2302-05-P1-irccommands_8c.html#af66724b4c955731fb5b1911d9f1c92ab',1,'names(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#af66724b4c955731fb5b1911d9f1c92ab',1,'names(data *d):&#160;G-2302-05-P1-irccommands.c']]],
-  ['nick',['nick',['../G-2302-05-P1-irccommands_8c.html#a27945577a0aa3cead3ab125e739a993d',1,'nick(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a27945577a0aa3cead3ab125e739a993d',1,'nick(data *d):&#160;G-2302-05-P1-irccommands.c']]]
+  ['main',['main',['../G-2302-05-P3-ssl__echo__client_8c.html#a3c04138a5bfe5d72780bb7e82a18e627',1,'main(int argc, char **argv):&#160;G-2302-05-P3-ssl_echo_client.c'],['../G-2302-05-P3-ssl__echo__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627',1,'main(int argc, char **argv):&#160;G-2302-05-P3-ssl_echo_server.c']]],
+  ['mode',['mode',['../G-2302-05-P1-irccommands_8c.html#a0dd39b5b3ded42d20f307bbf806ff04c',1,'mode(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a0dd39b5b3ded42d20f307bbf806ff04c',1,'mode(data *d):&#160;G-2302-05-P1-irccommands.c']]],
+  ['motd',['motd',['../G-2302-05-P1-irccommands_8c.html#a0609de371c3269993a77eb18b5bdd8be',1,'motd(data *d):&#160;G-2302-05-P1-irccommands.c'],['../G-2302-05-P1-irccommands_8h.html#a0609de371c3269993a77eb18b5bdd8be',1,'motd(data *d):&#160;G-2302-05-P1-irccommands.c']]]
 ];

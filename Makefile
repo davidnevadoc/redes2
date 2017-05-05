@@ -3,7 +3,7 @@ CFLAGS = -L$(LDIR) -I$(IDIR) -g `pkg-config --cflags gtk+-3.0`
 LDFLAGS = -lpthread -lircredes -lircinterface -lsoundredes -lirctad -lsoundredes -lpulse -lpulse-simple `pkg-config --libs gtk+-3.0` -lssl -lcrypto -rdynamic 
 AR = ar 
 
-TAR_FILE= G-2302-05-P3.tar.gz
+TAR_FILE= G-2302-05.tar.gz
 SDIR = src
 SLDIR = srclib
 IDIR = includes
@@ -12,6 +12,14 @@ ODIR = obj
 MDIR = man
 DDIR = doc
 BDIR = .
+
+C_ECHO = cliente_echo
+S_ECHO = servidor_echo
+
+#Certificados SSL
+ROOT_SSL=certs/ca.sh
+SERVER_SSL=certs/server.sh
+CLIENT_SSL=certs/client.sh
 
 _LIB = libredes2-G-2302-05-P3.a
 LIB = $(patsubst %,$(LDIR)/%,$(_LIB))
@@ -22,11 +30,12 @@ LOBJ = $(patsubst %,$(ODIR)/%,$(_LOBJ))
 _DEPS = 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ =G-2302-05-P1-irc_server.o  G-2302-05-P3-ssl_echo_server.o G-2302-05-P3-ssl_echo_client.o irc_client.o 
+_OBJ = servidor_irc.o  servidor_echo.o cliente_echo.o cliente_irc.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_BIN =  G-2302-05-P1-irc_server  G-2302-05-P3-ssl_echo_client G-2302-05-P3-ssl_echo_server irc_client
+_BIN =  servidor_irc  cliente_echo servidor_echo cliente_irc
 BIN = $(patsubst %,$(BDIR)/%,$(_BIN))
+
 
 all: $(BIN) 
 	@echo "#--------------------------"
@@ -47,11 +56,16 @@ $(OBJ):$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 
 $(BIN):%: $(ODIR)/%.o $(LIB)
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
+	
+
+	#mv $(C_ECHO) /echo
+	#mv $(S_ECHO) /echo
+
 
 compress: clean doc
 	rm -rf $(TAR_FILE)
 	rm -rf G-2302-05-P3
-	tar -zcvf ../$(TAR_FILE) ../G-2302-05-P3
+	tar -zcvf ../$(TAR_FILE) ../G-2302-05
 	mv ../$(TAR_FILE) $(TAR_FILE)
 
 doc:
@@ -76,3 +90,5 @@ clean:
 	@mkdir -p obj lib
 	@rm -fv $(TAR_FILE)
 	@rm -fv core vgcore* 
+	@rm -f echo/servidor_echo echo/cliente_echo
+	
