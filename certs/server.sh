@@ -1,5 +1,5 @@
 #Generamos clave privada RSA
-openssl genrsa -out certs/server/serverkey.pem 1024
+openssl genrsa -out certs/server/serverkey.pem 2048
 #Creamos un certificado autofirmado
 openssl req -new -key certs/server/serverkey.pem \
 -subj '/C=ES/ST=Madrid/L=Madrid/O=UAM/OU=UAM/CN=G-2302-05-P3-server' \

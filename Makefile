@@ -1,15 +1,16 @@
 CC=gcc 
-LDFLAGS= -pthread -lircredes -lirctad -lircinterface -lsoundredes
+LDFLAGS= -pthread -lircredes -lirctad -lircinterface -lsoundredes -lssl -lcrypt
 CFLAGS = -std=c11 -Wall -pedantic
 UDPECHO=ueserv
 TCPECHO=teserv
 IRC=ircserv
-
+SSLECHOC=cliente_echo
+SSLECHOS=servidor_echo
 SDIR=src
 ODIR=obj
-DDIR=inlude
+DDIR=includes
 
-_DEPS = G-2302-05-P1-udpechoserver.h G-2302-05-P1-tcpechoserver.h G-2302-05-P1-ircserver.h  G-2302-05-P1-main.h G-2302-05-P1-irccommands.h G-2302-05-P1-atiendecliente.h G-2302-05-P1-utilities.h
+_DEPS = G-2302-05-P1-udpechoserver.h G-2302-05-P1-tcpechoserver.h G-2302-05-P1-ircserver.h  G-2302-05-P1-main.h G-2302-05-P1-irccommands.h G-2302-05-P1-atiendecliente.h G-2302-05-P1-utilities.h G-2302-05-P3-ssl.h G-2302-05-P3-ssl_server.h tcp_tools.h
 DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
 
 #UDP echo server 
@@ -33,16 +34,23 @@ IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
 _IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))
 IRCOBJS = $(patsubst %,$(ODIR)/%,$(_IRCOBJS))
 
+#SSL echo client
+_SSLECHOCSOURCES = G-2302-05-P3-ssl_echo_client.c G-2302-05-P3-ssl.c tcp_tools.c
+SSLECHOCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+
+_SSLECHOCOBJS = $(patsubst %.c, %.o, $(_SSLECHOCSOURCES))
+SSLECHOCOBJS = $(patsubst %,$(ODIR)/%,$(_SSLECHOCOBJS))
+
 #SSL
 ROOT_SSL=certs/ca.sh
 SERVER_SSL=certs/server.sh
 CLIENT_SSL=certs/client.sh
 
 
-OBJS= $(UEOBJS) $(TEOBJS) $(IRCOBJS)
+OBJS= $(UEOBJS) $(TEOBJS) $(IRCOBJS) $(SSLECHOCOBJS)
 
 
-all: $(IRC)
+all: $(IRC) $(SSLECHOC)
 	@echo "#--------------------------"
 	@echo "          Redes 2"
 	@echo "         Pareja 05"
@@ -58,6 +66,9 @@ $(TCPECHO): $(TEOBJS)
 
 $(IRC): $(IRCOBJS)
 	$(CC) -o $@ $(IRCOBJS) $(CFLAGS) $(LDFLAGS)
+
+$(SSLECHOC): $(SSLECHOCOBJS)
+	$(CC) -o $@ $(SSLECHOCOBJS) $(CFLAGS) $(LDFLAGS)
 
 $(OBJS): $(ODIR)/%.o: $(SDIR)/%.c 
 	$(CC) -c -o $@ $< $(CFLAGS) 
@@ -83,5 +94,5 @@ doc:
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) 
+	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) $(SSLECHOC)
 
