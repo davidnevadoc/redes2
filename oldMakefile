@@ -1,0 +1,82 @@
+CC=gcc 
+LDFLAGS= -pthread -lircredes -lirctad -lircinterface -lsoundredes -lssl -lcrypt
+CFLAGS = -std=c11 -Wall -pedantic
+IRC=servidor_irc
+SSLECHOC=cliente_echo
+SSLECHOS=servidor_echo
+SDIR=src
+SLDIR=srclib
+ODIR=obj
+DDIR=includes
+
+_DEPS = G-2302-05-P1-ircserver.h  G-2302-05-P1-main.h G-2302-05-P1-irccommands.h G-2302-05-P1-atiendecliente.h G-2302-05-P1-utilities.h G-2302-05-P3-ssl_tools.h G-2302-05-P3-ssl_server.h G-2302-05-P2-tcp_tools.h
+DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
+
+
+#IRC server
+_IRCMAIN  =  G-2302-05-P1-main.c
+IRCMAIN = $(patsubst %,$(SDIR)/%,$(_IRCMAIN))
+
+_IRCSOURCES = G-2302-05-P1-irccommands.c G-2302-05-P1-atiendecliente.c G-2302-05-P1-utilities.c G-2302-05-P1-ircserver.c
+IRCSOURCES = $(patsubst %,$(SLDIR)/%,$(_IRCSOURCES))
+
+_IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES)) 
+IRCOBJS = $(patsubst %,$(ODIR)/%,$(_IRCOBJS))
+
+
+#SSL echo client
+_SSLECHOCSOURCES = G-2302-05-P3-ssl_echo_client.c G-2302-05-P3-ssl_tools.c G-2302-05-P2-tcp_tools.c
+SSLECHOCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+
+_SSLECHOCOBJS = $(patsubst %.c, %.o, $(_SSLECHOCSOURCES))
+SSLECHOCOBJS = $(patsubst %,$(ODIR)/%,$(_SSLECHOCOBJS))
+
+#SSL
+ROOT_SSL=certs/ca.sh
+SERVER_SSL=certs/server.sh
+CLIENT_SSL=certs/client.sh
+
+
+OBJS= $(IRCOBJS) $(SSLECHOCOBJS)
+#$(SSLECHOC)
+all: $(IRC) 
+	@echo "#--------------------------"
+	@echo "          Redes 2"
+	@echo "         Pareja 05"
+	@echo "        David Nevado"
+	@echo "        Maria Prieto"
+	@echo "#--------------------------"
+
+
+$(IRC): $(IRCOBJS)
+	$(CC) -o $@ $(IRCOBJS) $(CFLAGS) $(LDFLAGS)
+
+$(SSLECHOC): $(SSLECHOCOBJS)
+	$(CC) -o $@ $(SSLECHOCOBJS) $(CFLAGS) $(LDFLAGS)
+
+$(OBJS): $(ODIR)/%.o: $(SLDIR)/%.c 
+	$(CC) -c -o $@ $< $(CFLAGS) 
+
+
+certificados:
+	rm -f certs/*.pem certs/ca/*.pem certs/client/*.pem certs/server/*.pem
+	@echo "Generando certificado raíz para la CA..."
+	./$(ROOT_SSL)
+	@echo "Generando certificado del servidor..."
+	./$(SERVER_SSL)
+	@echo "Generando certificado del cliente..."
+	./$(CLIENT_SSL)
+
+log:
+	tail -f /var/log/syslog | grep IRCServ
+
+doc:
+	@echo "Generando documentación..."
+	doxygen
+
+
+
+.PHONY: clean
+clean:
+	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) $(SSLECHOC)
+

@@ -2,7 +2,7 @@
   @file tcp_tools.c
   @breif Utilidades para la conexion TCP
   @author David Nevado Catalan <david.nevadoc@estudiante.uam.es>
-  @author Maria Prieto Gil
+  @author Maria Prieto Gil <maria.prietogil@estudiante.uam.es>
   @date 26/04/2017
   */
 #include <string.h>

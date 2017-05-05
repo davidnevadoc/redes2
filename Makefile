@@ -1,56 +1,34 @@
-CC=gcc 
-LDFLAGS= -pthread -lircredes -lirctad -lircinterface -lsoundredes -lssl -lcrypt
-CFLAGS = -std=c11 -Wall -pedantic
-UDPECHO=ueserv
-TCPECHO=teserv
-IRC=ircserv
-SSLECHOC=cliente_echo
-SSLECHOS=servidor_echo
-SDIR=src
-ODIR=obj
-DDIR=includes
+CC = gcc
+CFLAGS = -L$(LDIR) -I$(IDIR) -g `pkg-config --cflags gtk+-3.0` 
+LDFLAGS = -lpthread -lircredes -lircinterface -lsoundredes -lirctad -lsoundredes -lpulse -lpulse-simple `pkg-config --libs gtk+-3.0` -lssl -lcrypto -rdynamic 
+AR = ar 
 
-_DEPS = G-2302-05-P1-udpechoserver.h G-2302-05-P1-tcpechoserver.h G-2302-05-P1-ircserver.h  G-2302-05-P1-main.h G-2302-05-P1-irccommands.h G-2302-05-P1-atiendecliente.h G-2302-05-P1-utilities.h G-2302-05-P3-ssl.h G-2302-05-P3-ssl_server.h tcp_tools.h
-DEPS = $(patsubst %,$(DDIR)/%,$(_DEPS))
+TAR_FILE= G-2302-05-P3.tar.gz
+SDIR = src
+SLDIR = srclib
+IDIR = includes
+LDIR = lib
+ODIR = obj
+MDIR = man
+DDIR = doc
+BDIR = .
 
-#UDP echo server 
-_UESOURCES = G-2302-05-P1-udpechoserver.c 
-UESOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+_LIB = libredes2-G-2302-05-P3.a
+LIB = $(patsubst %,$(LDIR)/%,$(_LIB))
 
-_UEOBJS = $(patsubst %.c, %.o, $(_UESOURCES))
-UEOBJS = $(patsubst %,$(ODIR)/%,$(_UEOBJS))
+_LOBJ =G-2302-05-P1-irccommands.o G-2302-05-P1-atiendecliente.o G-2302-05-P1-utilities.o G-2302-05-P1-ircserver.o G-2302-05-P2-tcp_tools.o G-2302-05-P3-ssl_tools.o G-2302-05-P2-ucommands.o G-2302-05-P2-rcommands.o G-2302-05-P2-udp_tools.o
+LOBJ = $(patsubst %,$(ODIR)/%,$(_LOBJ))
 
-#TCP echo server
-_TESOURCES = G-2302-05-P1-tcpechoserver.c
-TESOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+_DEPS = 
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_TEOBJS = $(patsubst %.c, %.o, $(_TESOURCES))
-TEOBJS = $(patsubst %,$(ODIR)/%,$(_TEOBJS))
+_OBJ =G-2302-05-P1-irc_server.o  G-2302-05-P3-ssl_echo_server.o G-2302-05-P3-ssl_echo_client.o irc_client.o 
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-#IRC server
-_IRCSOURCES = G-2302-05-P1-main.c G-2302-05-P1-irccommands.c G-2302-05-P1-atiendecliente.c G-2302-05-P1-utilities.c G-2302-05-P1-ircserver.c
-IRCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
+_BIN =  G-2302-05-P1-irc_server  G-2302-05-P3-ssl_echo_client G-2302-05-P3-ssl_echo_server irc_client
+BIN = $(patsubst %,$(BDIR)/%,$(_BIN))
 
-_IRCOBJS = $(patsubst %.c, %.o, $(_IRCSOURCES))
-IRCOBJS = $(patsubst %,$(ODIR)/%,$(_IRCOBJS))
-
-#SSL echo client
-_SSLECHOCSOURCES = G-2302-05-P3-ssl_echo_client.c G-2302-05-P3-ssl.c tcp_tools.c
-SSLECHOCSOURCES = $(patsubst %,$(SDIR)/%,$(_SOURCES))
-
-_SSLECHOCOBJS = $(patsubst %.c, %.o, $(_SSLECHOCSOURCES))
-SSLECHOCOBJS = $(patsubst %,$(ODIR)/%,$(_SSLECHOCOBJS))
-
-#SSL
-ROOT_SSL=certs/ca.sh
-SERVER_SSL=certs/server.sh
-CLIENT_SSL=certs/client.sh
-
-
-OBJS= $(UEOBJS) $(TEOBJS) $(IRCOBJS) $(SSLECHOCOBJS)
-
-
-all: $(IRC) $(SSLECHOC)
+all: $(BIN) 
 	@echo "#--------------------------"
 	@echo "          Redes 2"
 	@echo "         Pareja 05"
@@ -58,21 +36,30 @@ all: $(IRC) $(SSLECHOC)
 	@echo "        Maria Prieto"
 	@echo "#--------------------------"
 
-$(UDPECHO): $(UEOBJS)
-	$(CC) -o $@ $(UEOBJS) $(CFLAGS) $(LDFLAGS)
+$(LIB): $(LOBJ)
+	$(AR) rcv $@ $^
 
-$(TCPECHO): $(TEOBJS)
-	$(CC) -o $@ $(TEOBJS) $(CFLAGS) $(LDFLAGS)
+$(LOBJ):$(ODIR)/%.o: $(SLDIR)/%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(IRC): $(IRCOBJS)
-	$(CC) -o $@ $(IRCOBJS) $(CFLAGS) $(LDFLAGS)
-
-$(SSLECHOC): $(SSLECHOCOBJS)
-	$(CC) -o $@ $(SSLECHOCOBJS) $(CFLAGS) $(LDFLAGS)
-
-$(OBJS): $(ODIR)/%.o: $(SDIR)/%.c 
+$(OBJ):$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) 
 
+$(BIN):%: $(ODIR)/%.o $(LIB)
+	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
+
+compress: clean doc
+	rm -rf $(TAR_FILE)
+	rm -rf G-2302-05-P3
+	tar -zcvf ../$(TAR_FILE) ../G-2302-05-P3
+	mv ../$(TAR_FILE) $(TAR_FILE)
+
+doc:
+	@echo "Generando documentación..."
+	doxygen
+
+log: 
+	tail -F /var/log/syslog | grep irc
 
 certificados:
 	rm -f certs/*.pem certs/ca/*.pem certs/client/*.pem certs/server/*.pem
@@ -83,16 +70,9 @@ certificados:
 	@echo "Generando certificado del cliente..."
 	./$(CLIENT_SSL)
 
-log:
-	tail -f /var/log/syslog | grep IRCServ
-
-doc:
-	@echo "Generando documentación..."
-	doxygen
-
-
-
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(UDPECHO) $(TCPECHO) $(IRC) $(SSLECHOC)
-
+	@rm -frv $(BIN) $(LIB) $(OBJ) $(LOBJ) 
+	@mkdir -p obj lib
+	@rm -fv $(TAR_FILE)
+	@rm -fv core vgcore* 

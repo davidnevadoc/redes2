@@ -1,6 +1,6 @@
 /**
  * @brief Librería de manejo de la capa SSL
- * @file G-2302-05-P3-ssl.h
+ * @file G-2302-05-P3-ssl_tools.h
  * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
  * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
  * @date 02/05/2017
