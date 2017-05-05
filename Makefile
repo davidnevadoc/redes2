@@ -61,7 +61,14 @@ $(BIN):%: $(ODIR)/%.o $(LIB)
 	#mv $(C_ECHO) /echo
 	#mv $(S_ECHO) /echo
 
-
+help:
+	@echo "-------- OPCIONES DEL MAKEFILE ----------"
+	@echo " <make> para crear ejecutables"
+	@echo " <make compress> para crear comprimido tar.gz"
+	@echo " <make doc> genera documentacion"
+	@echo " <make log> muestra syslog"
+	@echo " <make certificados> crea certificados SSL"
+	@echo " <make clean> elimina los ejecutables"
 compress: clean doc
 	rm -rf $(TAR_FILE)
 	rm -rf G-2302-05-P3
