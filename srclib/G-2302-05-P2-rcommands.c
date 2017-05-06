@@ -211,6 +211,10 @@ void rPrivMsg(char *comm){
 			client_launchaudio();
 			free(taud_data);
 			free(tr_data);
+		}else if(sscanf(msg, "\001ENDAUD %li",&(tr_data->port))>0) {
+			IRCInterface_ExitAudioChat(NULL);
+			free(tr_data);
+			free(taud_data);
 		}else{
 			free(tr_data);
 			free(taud_data);

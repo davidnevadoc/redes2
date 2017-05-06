@@ -214,11 +214,11 @@ void client_setauddest(char *ip, long port){
  * mismo que envio el mensaje de inicio de chat de voz
  */
 void client_sendaudreply(char  *nick){
-	syslog(LOG_INFO,"IRCCli: Abriendo puerto udp y enviando respuesta...");
 	uint16_t port=0;
 	char buff[128]={0};
 	char *pmsg=NULL;
 	char *ip_cutre=NULL;
+	syslog(LOG_INFO,"IRCCli: Abriendo puerto udp y enviando respuesta...");
 	ip_cutre=get_ip();
 	udp_open(&aud_sock, &port);
 	snprintf(buff,128,"\001AUDREPLY %s %u",ip_cutre, port);
@@ -246,6 +246,14 @@ void client_launchaudio(){
 		(void * (*)(void *)) taudio_rcv, NULL);
 	pthread_detach(tsend_aud);
 	pthread_detach(trcv_aud);
+}
+void client_signalstopaud(char *nick){
+	char buff[64]={0};
+	char *pmsg=NULL;
+	snprintf(buff,64,"\001ENDAUD 1");
+	IRCMsg_Privmsg(&pmsg, NULL, nick, buff);
+	client_send(pmsg);
+	free(pmsg);
 }
 /**
  * Funcion especifica que solo devuelve el nick utilizando la funcion
@@ -1210,6 +1218,7 @@ boolean IRCInterface_DisconnectServer(char *server, int port)
  
 boolean IRCInterface_ExitAudioChat(char *nick)
 {
+	if(nick) client_signalstopaud(nick);
 	pthread_mutex_lock(&mutex_audrcv);
 	pthread_mutex_lock(&mutex_audsnd);
 	active_audio=0;
@@ -1595,11 +1604,13 @@ boolean IRCInterface_SendFile(char *filename, char *nick, char *data, long unsig
 boolean IRCInterface_StartAudioChat(char *nick)
 {
 	
-	char *pmsg=NULL, *ip_cutre=NULL;
+	char *pmsg=NULL, *ip_cutre=NULL, *mynick=NULL;
 	char msg[512]={0};
 	uint16_t udp_port=0;
 	struct sockaddr_in addr;
 	socklen_t slen=sizeof(addr);
+	mynick=get_nick();
+	if(strcmp(nick,mynick)==0) return FALSE;
 	/*En este caso ya esta abierto, solo hay que reanudar el audio pausado*/
 	if(playing_audio==0 && active_audio==1){
 		playing_audio=1;
@@ -1621,9 +1632,6 @@ boolean IRCInterface_StartAudioChat(char *nick)
 	client_send(pmsg);
 	free(pmsg);
 
-
-	//active_audio=1;
-	//playing_audio =1;
 	return TRUE;
 }
 void taudio_send(){

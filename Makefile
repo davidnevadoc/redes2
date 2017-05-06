@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -L$(LDIR) -I$(IDIR) -g `pkg-config --cflags gtk+-3.0` 
+CFLAGS = -L$(LDIR) -I$(IDIR) -g -Wall -ansi -pedantic -std=c11 `pkg-config --cflags gtk+-3.0` 
 LDFLAGS = -lpthread -lircredes -lircinterface -lsoundredes -lirctad -lsoundredes -lpulse -lpulse-simple `pkg-config --libs gtk+-3.0` -lssl -lcrypto -rdynamic 
 AR = ar 
 
@@ -97,7 +97,7 @@ certificados:
 
 .PHONY: clean
 clean:
-	@rm $(C_ECHO) $(S_ECHO) $(C_IRC) $(S_IRC)
+	
 	@rm -frv $(BIN) $(LIB) $(OBJ) $(LOBJ) 
 	@mkdir -p obj lib
 	@rm -fv $(TAR_FILE)

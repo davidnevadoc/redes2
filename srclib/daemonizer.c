@@ -48,9 +48,9 @@ int daemonizar(char *service){
 	
 	/*LOG_PID -> prints PID with every message
 	  LOG_USER -> default value*/
-	openlog("Daemonlog",LOG_PID ,LOG_USER);
+	//openlog("Daemonlog",LOG_PID ,LOG_USER);
 	//syslog(LOG_INFO,"Todo bien...");
-	closelog();
+	//closelog();
 
 	/***************/
 	
