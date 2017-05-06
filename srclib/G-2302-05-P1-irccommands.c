@@ -9,7 +9,7 @@
 #include "../includes/G-2302-05-P1-irccommands.h"
 
 #include <redes2/irc.h>
-#define MOTD_MSG "bendermini.txt"
+#define MOTD_MSG "motd.txt"
 /**
 *@brief Función que atiende al comando PASS
  *@param d Estructura de datos con la informacion del hilo
@@ -372,7 +372,7 @@ int who(data *d){
 	}
 
 	ComplexUser_bySocket(&prefix_s, &(d->socket));
-	
+	if(!mask) return ERROR;
 	IRCTAD_ListNicksOnChannelArray(mask, &list, &nlist);
 	for(i = 0; i < nlist; i++){
 		/*IRCMsg_RplNamReply (&reply, prefix_s, list[i], "type", mask, list[i]);

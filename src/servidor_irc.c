@@ -12,6 +12,7 @@ int stop=0;
 int sockfd =-1;
 void manejador_SIGINT(int sig){
 	stop=1;
+	shutdown(sockfd, SHUT_RDWR);
 	close(sockfd);
 }
 /**
