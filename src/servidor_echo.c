@@ -28,7 +28,7 @@
 int main(int argc, char** argv) {
 	int sockfd = 0;
 	char buf[MAX_MSG_SSL];
-	int port = 6611; /*se pasa como arg de entrada?*/
+	int port = 6502; 
 	SSL_CTX *context;
 	SSL *ssl;
 	int connfd = 0;
@@ -42,18 +42,12 @@ int main(int argc, char** argv) {
 		port = atoi(argv[1]);
 	}
 
-	//puts("Inicializando nivel SSL...");
     inicializar_nivel_SSL();
 
-    //puts("Fijando contexto SSL...");
 	context = fijar_contexto_SSL(SERVER_KEY, SERVER_CERT);
 
 	/*Abro conexion TCP*/
-	//puts("Abriendo conexión TCP...");
-	//tcp_listen_p(5, &socket, port); /*deberia añadir el puerto??*/
-
 	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
-		puts("---1");
 		exit(-1);
 	}
 	/*rellenar estructura de serv*/
@@ -64,22 +58,17 @@ int main(int argc, char** argv) {
 
 	if ( bind(sockfd, (struct sockaddr * ) &serv, sizeof(serv) ) == -1){
 		close(sockfd);
-		puts("---2");
 		exit(-1);
 	}
 
 	/*Conexion */
 	if ( listen(sockfd, 20) == -1 ) {
-		puts("---3");
 		exit(-1);
 	}
 
-	//fprintf(stderr, "socket --> %d\n", socket);
-	//fprintf(stderr, "puerto --> %d\n", port);
-
 	/*accept*/
 	connfd = accept(sockfd, &cli, &clilen);
-	//fprintf(stderr, "puerto cliente --> %d\n", connfd);
+
 	ssl = aceptar_canal_seguro_SSL(connfd, context);
 	if(!ssl){
 		fprintf(stderr, "Error canal seguro\n");
@@ -91,11 +80,9 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-	//puts("SERVIDOR ECHO");
 	while(1){
         memset(buf, 0, MAX_MSG_SSL);
 		recibir_datos_SSL(connfd, buf, ssl);
-		//fprintf(stdout, "recibo ---> %s\n", buf);
 		if(!strcmp(buf, "exit\n")) break;
 		enviar_datos_SSL(connfd, buf, ssl);
 	}
