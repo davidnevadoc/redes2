@@ -28,7 +28,7 @@ SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert){
 		perror("No context");
 		return NULL;
 	}
-	if(SSL_CTX_load_verify_locations(context, "../certs/ca/cacert.pem", NULL) != 1){
+	if(SSL_CTX_load_verify_locations(context, CA_CERT, NULL) != 1){
 		perror("Error verify locations");
 		return NULL;
 	}
@@ -72,19 +72,18 @@ int evaluar_post_connectar_SSL(int socket, SSL *ssl){
 
 int enviar_datos_SSL(int socket, void* buf, SSL *ssl){
 	if(!buf) return -1;
-	return SSL_write(ssl, buf, sizeof(buf));
+	return SSL_write(ssl, buf, strlen(buf)+1);
 }
 
 int recibir_datos_SSL(int socket, void* buf, SSL *ssl){
 	if(!buf) return -1;
-	return SSL_read(ssl, buf, 500); /*no se si esto o sizeof(buf)*/
+	return SSL_read(ssl, buf, MAX_MSG_SSL); /*no se si esto o sizeof(buf)*/
 }
 
 void cerrar_canal_SSL(int socket, SSL *ssl, SSL_CTX *context){
   SSL_shutdown(ssl);
   SSL_free(ssl);
   SSL_CTX_free(context);
-	/*???*/
   close(socket);
 }
 

@@ -18,8 +18,8 @@
 */
 int main(int argc, char** argv) {
 	int socket;
-	int port = 6669; /*se pasa como arg de entrada?*/
-	char buf[500];
+	int port = 6611; /*se pasa como arg de entrada?*/
+	char buf[MAX_MSG_SSL];
 	SSL_CTX *context;
 	SSL *ssl;
 	struct in_addr ip;
@@ -27,18 +27,18 @@ int main(int argc, char** argv) {
 	if(argc == 2){
 		port = atoi(argv[1]);
 	}
-	puts("Inicializando nivel SSL...");
+	//puts("Inicializando nivel SSL...");
     inicializar_nivel_SSL();
 
-    puts("Fijando contexto SSL...");
-	context = fijar_contexto_SSL("../certs/client/clientkey.pem" , "../certs/cliente.pem");
+    //puts("Fijando contexto SSL...");
+	context = fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT);
 
 	/*Abro conexion TCP*/
-	puts("Abriendo conexión TCP...");
+	//puts("Abriendo conexión TCP...");
 	tcp_connect(&socket, ip, port, "localhost");
 
-		fprintf(stderr, "socket --> %d\n", socket);
-		fprintf(stderr, "puerto --> %d\n", port);
+	//fprintf(stderr, "socket --> %d\n", socket);
+	//fprintf(stderr, "puerto --> %d\n", port);
 
 	ssl = conectar_canal_seguro_SSL(socket, context);
 	if(!ssl){
@@ -51,16 +51,16 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-	puts("CLIENTE ECHO");
+	//puts("CLIENTE ECHO");
 	while(1){
 		fflush(stdin);
 		fscanf(stdin, "%s", buf);
-        fprintf(stdout, "  ------->  %s\n\n", buf);
+        //fprintf(stdout, "  ------->  %s\n\n", buf);
 		enviar_datos_SSL(socket, buf, ssl);
 		if(!strcmp(buf, "exit")) break;
-        memset(buf, 0, 500);
+        memset(buf, 0, MAX_MSG_SSL);
 		recibir_datos_SSL(socket, buf, ssl);
-        fprintf(stdout, "%s/n", buf);
+        fprintf(stdout, "%s\n", buf);
 	}
 
 	cerrar_canal_SSL(socket, ssl, context);

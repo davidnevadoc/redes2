@@ -17,12 +17,22 @@
 #define SSL_OK 0
 #define SSL_ERR -1
 
-/*Macros de error*/
-#define SSLERR_LOADVERIFY -2
-#define SSLERR_INVALIDKEY -3
-#define SSLERR_INVALIDCERT -4
-#define SSLERR_SETFD -5
-#define SSLERR_FAIL -6
+/*Path certificados*/
+#define CA_CERT "./certs/ca/cacert.pem"
+#define CLIENT_CERT "./certs/cliente.pem"
+#define CLIENT_KEY "./certs/client/clientkey.pem"
+#define SERVER_CERT "./certs/servidor.pem"
+#define SERVER_KEY "./certs/server/serverkey.pem"
+
+#define MAX_MSG_SSL 50000
+
+/*Path certificados para probarrrrr*/
+/*#define CA_CERT "../certs/ca/cacert.pem"
+#define CLIENT_CERT "../certs/cliente.pem"
+#define CLIENT_KEY "../certs/client/clientkey.pem"
+#define SERVER_CERT "../certs/servidor.pem"
+#define SERVER_KEY "../certs/server/serverkey.pem"*/
+
 
 
 /**

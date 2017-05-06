@@ -50,35 +50,6 @@ long tcp_recv(int sockfd, char* msg, size_t max){
  * @param [out] socklisten Identificador del socket conectado
  * @return 0 si se conecto con exito, -1 en caso contrario
  */
-long tcp_listen_p(int n_cli, int *socklisten, int port){
-	int sockl=0;
-	struct sockaddr_in dir;
-
-	/*Incializar estructura del socket*/
-	if ( (sockl=socket(AF_INET, SOCK_STREAM, 0)) == -1){
-		return -1;
-	}
-	/*No llamamos a bind*/
-
-	dir.sin_family=AF_INET;
-	dir.sin_port=htons(port);
-	dir.sin_addr.s_addr=htonl(INADDR_ANY);
-	bzero((void*)&(dir.sin_zero), 8);
-
-	if(bind (sockl, (struct sockaddr *)&dir, sizeof(dir))<0){
-		close(sockl);
-		exit(1);
-	}
-
-	/*Puerto a la escucha*/
-	if (listen(sockl,n_cli)==-1){
-		syslog(LOG_ERR, "IRC: Error en sockfd(): %d", errno);
-		return -1;
-	}
-	*socklisten=sockl;
-	return 0;
-}
-
 long tcp_listen(int n_cli, int *socklisten){
 	int sockl=0;
 	if(n_cli<1 || !socklisten){
