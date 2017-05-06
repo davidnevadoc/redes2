@@ -1,12 +1,14 @@
 /**
- * @brief Servidor IRC v0.0
- * @file servidor_irc.c
+ * @brief Servidor IRC con SSL
+ * @file servidor_iIRC.c
  * @author Maria Prieto Gil maria.prietogil@estudiante.uam.es
  * @author David Nevado Catalan david.nevadoc@estudiante.uam.es
  * @date 02/05/2017
  */
 
 #include "../includes/G-2302-05-P1-main.h"
+#include "../includes/G-2302-05-P3-ssl_tools.h"
+#include "../includes/G-2302-05-P2-tcp_tools.h"
 #include <unistd.h> 
 int stop=0;
 void manejador_SIGINT(int sig){
@@ -23,6 +25,9 @@ int main(int argc, char *argv[]){
 	/*Declaracion e inicializacion de variables*/
 	struct sockaddr_in serv;
 	struct sockaddr cli;
+
+	SSL_CTX *context;
+	SSL *ssl;
 	
 	int n=0, i=0;
 	int sockfd =-1, connfd =-1;
@@ -34,28 +39,37 @@ int main(int argc, char *argv[]){
 
 	/*Comprobacion de parametros*/
 	if(argc<2){
-		port = DEFAULT_PORT;
+		port = 6669;
 		printf("Se asigna el puerto %" PRIu16 "\n", port);
-	} else if (argc == 2 ) {
-		port= (uint16_t) atoi(argv[1]) ;
+	} else if (argc == 3 ) {
+		port= (uint16_t) atoi(argv[2]) ;
 	} else {
 		printf("Entrada invalida."
-			"Especifique puerto de escucha\n");
-		exit( ERROR);	
+			"Ejemplo: ./servidor_IRC [--port puerto]\n");
+		exit(ERROR);	
 	}
+		
 	if(port<1024){
 		printf("%d Puerto no valido\n", port);
 		exit( ERROR);
 	}
-	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
-		syslog(LOG_ERR, "IRCServ: Error en sockfd()");
-		exit(ERROR);
-	} 
+
 	/*Armar manejador de sennal*/
 	if(signal(SIGINT,manejador_SIGINT)==SIG_ERR){
 		perror("Error en la captura de SIGINT");
 		exit(ERROR);
 	}
+
+	
+    	inicializar_nivel_SSL();
+
+	context = fijar_contexto_SSL("../certs/server/serverkey.pem", "../certs/servidor.pem", "../certs/ca/cacert.pem");
+
+	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){
+		syslog(LOG_ERR, "IRCServ: Error en sockfd()");
+		exit(ERROR);
+	} 
+
 	/*rellenar estructura de serv*/
 	serv.sin_family=AF_INET; /*Vamos en IPv4*/
 	serv.sin_addr.s_addr=htonl(INADDR_ANY);
@@ -66,6 +80,7 @@ int main(int argc, char *argv[]){
 		 sizeof(serv) ) == -1){
 		syslog(LOG_ERR, "IRCServ: Error en bind(): %d",
 		 errno);
+		close(sockfd);
 		exit(ERROR);
 	}
 
@@ -90,9 +105,22 @@ int main(int argc, char *argv[]){
 			syslog(LOG_ERR,"IRCServ: Error en accept(): %d",
 			 errno);
 		}
+		ssl = aceptar_canal_seguro_SSL(connfd, context);
+		if(!ssl){
+			fprintf(stderr, "Error canal seguro\n");
+			exit(1);
+		}
+
+		if(evaluar_post_connectar_SSL(connfd, ssl)) {
+		    fprintf(stderr, "Error del certificador\n");
+		    exit(1);
+		}
 		
 		Atiende_cliente(cli, connfd);
 	}
+
+	cerrar_canal_SSL(connfd, ssl, context);
+
 	n = getdtablesize();
 	for(i=0;i<n;i++){
 		close(i);

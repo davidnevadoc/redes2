@@ -18,7 +18,7 @@
 */
 int main(int argc, char** argv) {
 	int socket;
-	int port = 6502;
+	int port = 6506;
 	char buf[MAX_MSG_SSL];
 	SSL_CTX *context;
 	SSL *ssl;
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
 
     inicializar_nivel_SSL();
 
-	context = fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT);
+	context = fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT, CA_CERT);
 
 	/*Abro conexion TCP*/
 	tcp_connect(&socket, ip, port, "localhost");

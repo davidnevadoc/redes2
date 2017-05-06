@@ -28,7 +28,7 @@
 int main(int argc, char** argv) {
 	int sockfd = 0;
 	char buf[MAX_MSG_SSL];
-	int port = 6502; 
+	int port = 6506; 
 	SSL_CTX *context;
 	SSL *ssl;
 	int connfd = 0;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
     inicializar_nivel_SSL();
 
-	context = fijar_contexto_SSL(SERVER_KEY, SERVER_CERT);
+	context = fijar_contexto_SSL(SERVER_KEY, SERVER_CERT, CA_CERT);
 
 	/*Abro conexion TCP*/
 	if ( (sockfd=socket(AF_INET, SOCK_STREAM, 0)) == -1){

@@ -26,14 +26,6 @@
 
 #define MAX_MSG_SSL 50000
 
-/*Path certificados para probarrrrr*/
-/*#define CA_CERT "../certs/ca/cacert.pem"
-#define CLIENT_CERT "../certs/cliente.pem"
-#define CLIENT_KEY "../certs/client/clientkey.pem"
-#define SERVER_CERT "../certs/servidor.pem"
-#define SERVER_KEY "../certs/server/serverkey.pem"*/
-
-
 
 /**
 *@brief Función que se encarga de realizar todas las llamadas necesarias para 
@@ -47,7 +39,7 @@ void inicializar_nivel_SSL();
 *Deberá recibir información sobre las rutas a los certificados y claves con 
 *los que vaya a trabajar la aplicación.
 */
-SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert);
+SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert);
 
 /**
 *@brief Función que dado un contexto SSL y un descriptor de socket se *encarga de obtener un canal seguro SSL iniciando el proceso de 

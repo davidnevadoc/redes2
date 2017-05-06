@@ -21,14 +21,14 @@ void inicializar_nivel_SSL(){
     SSL_library_init();
 }
 
-SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert){
+SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert){
 	SSL_CTX *context;
 	context = SSL_CTX_new(SSLv23_method());
 	if(!context){
 		perror("No context");
 		return NULL;
 	}
-	if(SSL_CTX_load_verify_locations(context, CA_CERT, NULL) != 1){
+	if(SSL_CTX_load_verify_locations(context, ca_cert, NULL) != 1){
 		perror("Error verify locations");
 		return NULL;
 	}
