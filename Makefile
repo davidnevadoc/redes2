@@ -44,6 +44,8 @@ all: $(BIN)
 	@echo "        David Nevado"
 	@echo "        Maria Prieto"
 	@echo "#--------------------------"
+	@mv $(C_ECHO) echo
+	@mv $(S_ECHO) echo
 
 $(LIB): $(LOBJ)
 	$(AR) rcv $@ $^
@@ -58,8 +60,7 @@ $(BIN):%: $(ODIR)/%.o $(LIB)
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
 	
 
-	#mv $(C_ECHO) /echo
-	#mv $(S_ECHO) /echo
+
 
 help:
 	@echo "-------- OPCIONES DEL MAKEFILE ----------"

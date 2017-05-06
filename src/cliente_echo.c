@@ -18,35 +18,52 @@
 */
 int main(int argc, char** argv) {
 	int socket;
-	char buf[100];
+	int port = 6669; /*se pasa como arg de entrada?*/
+	char buf[500];
+	SSL_CTX *context;
+	SSL *ssl;
+	struct in_addr ip;
+
+	if(argc == 2){
+		port = atoi(argv[1]);
+	}
 	puts("Inicializando nivel SSL...");
     inicializar_nivel_SSL();
+
     puts("Fijando contexto SSL...");
-	if(fijar_contexto_SSL("certs/client/clientkey.pem" , "certs/cliente.pem") != SSL_OK){
-		fprintf(stderr, "Error fijando contexto\n");
-		exit(1);
-	}
-	puts("Abriendo conexión TCP...");
+	context = fijar_contexto_SSL("../certs/client/clientkey.pem" , "../certs/cliente.pem");
+
 	/*Abro conexion TCP*/
-	tcp_listen(5, &socket);
+	puts("Abriendo conexión TCP...");
+	tcp_connect(&socket, ip, port, "localhost");
 
-	if(conectar_canal_seguro_SSL(socket)!=SSL_OK){
-		fprintf(stderr, "error al aceptar canal\n");
+		fprintf(stderr, "socket --> %d\n", socket);
+		fprintf(stderr, "puerto --> %d\n", port);
+
+	ssl = conectar_canal_seguro_SSL(socket, context);
+	if(!ssl){
+		fprintf(stderr, "Error canal no seguro\n");
 		exit(1);
 	}
 
-	if(evaluar_post_connectar_SSL(socket)) {
+	if(evaluar_post_connectar_SSL(socket, ssl)) {
         fprintf(stderr, "Error del certificador\n");
         exit(1);
     }
 
-	puts("Cliente echo...");
-	//while(1){ TODO de momento solo una vez pa probar
-	enviar_datos_SSL(socket, "Probando cliente echo");
-	recibir_datos_SSL(socket, buf, sizeof(buf));
-	fprintf(stderr, "--> %s\n", buf);
+	puts("CLIENTE ECHO");
+	while(1){
+		fflush(stdin);
+		fscanf(stdin, "%s", buf);
+        fprintf(stdout, "  ------->  %s\n\n", buf);
+		enviar_datos_SSL(socket, buf, ssl);
+		if(!strcmp(buf, "exit")) break;
+        memset(buf, 0, 500);
+		recibir_datos_SSL(socket, buf, ssl);
+        fprintf(stdout, "%s/n", buf);
+	}
 
-	cerrar_canal_SSL(socket);
+	cerrar_canal_SSL(socket, ssl, context);
 	
 	return 0;
 }
