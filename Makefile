@@ -84,7 +84,7 @@ doc:
 	doxygen
 
 log: 
-	tail -F /var/log/syslog | grep irc
+	tail -F /var/log/syslog | grep IRC
 
 certificados:
 	rm -f certs/*.pem certs/ca/*.pem certs/client/*.pem certs/server/*.pem
@@ -97,6 +97,7 @@ certificados:
 
 .PHONY: clean
 clean:
+	@rm $(C_ECHO) $(S_ECHO) $(C_IRC) $(S_IRC)
 	@rm -frv $(BIN) $(LIB) $(OBJ) $(LOBJ) 
 	@mkdir -p obj lib
 	@rm -fv $(TAR_FILE)

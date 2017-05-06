@@ -9,8 +9,10 @@
 #include "../includes/G-2302-05-P1-main.h"
 #include <unistd.h> 
 int stop=0;
+int sockfd =-1;
 void manejador_SIGINT(int sig){
 	stop=1;
+	close(sockfd);
 }
 /**
  * Funcion Main del servidor. Gestiona los parametros pasados por el usuario
@@ -23,9 +25,8 @@ int main(int argc, char *argv[]){
 	/*Declaracion e inicializacion de variables*/
 	struct sockaddr_in serv;
 	struct sockaddr cli;
-	
 	int n=0, i=0;
-	int sockfd =-1, connfd =-1;
+	int connfd =-1;
 	uint16_t port =0;
 	socklen_t clilen = 0;
 	
@@ -78,7 +79,6 @@ int main(int argc, char *argv[]){
 	syslog(LOG_INFO, "Socket a la escucha");
 	if(init_var()!=OK){
 		syslog(LOG_ERR, "IRCServ: No se pudieron iniciar las variables globales");
-		//TODO cerrar sockets, liberar...
 		exit(ERROR);
 	}
 	/*bucle principal, a la espera conexiones*/
@@ -92,11 +92,11 @@ int main(int argc, char *argv[]){
 		}
 		
 		Atiende_cliente(cli, connfd);
-	}
+	}/*
 	n = getdtablesize();
 	for(i=0;i<n;i++){
 		close(i);
-	}
+	}*/
 	free_all();
 	printf("\nServidor cerrado\n");
 	exit(OK);
