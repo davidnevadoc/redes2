@@ -1,0 +1,2 @@
+NICK yoda
+USER yoda 0 * :miservidor.com

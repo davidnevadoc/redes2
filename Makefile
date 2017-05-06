@@ -15,7 +15,8 @@ BDIR = .
 
 C_ECHO = cliente_echo
 S_ECHO = servidor_echo
-
+C_IRC = cliente_IRC
+S_IRC = servidor_IRC
 #Certificados SSL
 ROOT_SSL=certs/ca.sh
 SERVER_SSL=certs/server.sh
@@ -30,10 +31,10 @@ LOBJ = $(patsubst %,$(ODIR)/%,$(_LOBJ))
 _DEPS = 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = servidor_irc.o  servidor_echo.o cliente_echo.o cliente_irc.o 
+_OBJ = servidor_IRC.o  servidor_echo.o cliente_echo.o cliente_IRC.o servidor_irc.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_BIN =  servidor_irc  cliente_echo servidor_echo cliente_irc
+_BIN =  servidor_IRC  cliente_IRC cliente_echo servidor_echo cliente_IRC servidor_irc
 BIN = $(patsubst %,$(BDIR)/%,$(_BIN))
 
 
@@ -46,6 +47,8 @@ all: $(BIN)
 	@echo "#--------------------------"
 	@mv $(C_ECHO) echo
 	@mv $(S_ECHO) echo
+	@mv $(C_IRC) cliente_servidor
+	@mv $(S_IRC) cliente_servidor
 
 $(LIB): $(LOBJ)
 	$(AR) rcv $@ $^
@@ -99,4 +102,5 @@ clean:
 	@rm -fv $(TAR_FILE)
 	@rm -fv core vgcore* 
 	@rm -f echo/servidor_echo echo/cliente_echo
+	@rm -f cliente_servidor/cliente_IRC cliente_servidor/servidor_IRC
 	
