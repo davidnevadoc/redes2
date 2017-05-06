@@ -12,4 +12,7 @@ void client_connect( int *socket, char* server, int port);
 void client_disconnect();
 void client_stopsnd();
 void client_rejectfile(char *nick);
+void client_setauddest(char *ip, long port);
+void client_sendaudreply(char  *nick);
+void client_launchaudio();
 #endif

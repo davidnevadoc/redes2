@@ -2,7 +2,7 @@
   @file ucommands.c
   @breif Comandos introducidos por el usuario
   @author David Nevado Catalan <david.nevadoc@estudiante.uam.es>
-  @author Maria Prieto Gil  <maria.prietogil@estudiante.uam.es>
+  @author Maria Prieto Gil
   @date 10/04/2017
   */
 

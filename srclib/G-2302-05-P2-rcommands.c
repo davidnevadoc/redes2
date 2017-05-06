@@ -2,7 +2,7 @@
   @file rcommands.c
   @breif Comandos recibidos del servidor.
   @author David Nevado Catalan <david.nevadoc@estudiante.uam.es>
-  @author Maria Prieto Gil  <maria.prietogil@estudiante.uam.es>
+  @author Maria Prieto Gil
   @date 10/04/2017
   */
 
@@ -57,7 +57,6 @@ void rJoin(char * comm){
 	IRCParse_ComplexUser(prefix, &nick, &user, &host, &server);
 	/*Obtencion de nuestro nick*/
 	mynick=getNick_Thread();
-	
 	/*Alguien se unio al canal*/
 	if(strcmp(nick, mynick)){/*
 		if(!IRCInterface_QueryChannelExist(msg)){
@@ -67,7 +66,6 @@ void rJoin(char * comm){
 		snprintf(buff,128, "%s has joined.", nick);
 		IRCInterface_WriteChannelThread(msg,info,buff);
 		IRCInterface_AddNickChannelThread(msg, nick, nick, nick, nick, NONE);
-
 	/*Nos unimos a un canal*/
 	}else{
 		/*Si no existe el canal se crea*/
@@ -122,11 +120,11 @@ void rKick(char * comm){
 	mynick=getNick_Thread();
 	/*Nos echan*/
 	if(!strcmp(mynick, user2)){
-		snprintf(buff, 128, "You were kicked out of %s by %s. Reason: %s", channel, user2, farewell);
+		snprintf(buff, 128, "You were kicked out of %s by %s. Reason: %s", channel, nick, farewell);
 		IRCInterface_WriteSystemThread(info, buff);
 		IRCInterface_RemoveChannelThread(channel);
 	}else{
-		snprintf(buff, 128, "%s was kicked out by %s. Reason: %s", user2, nick, farewell );
+		snprintf(buff, 128, "%s was kicked out by %s. Reason: %s", user, nick, farewell );
 		IRCInterface_WriteChannelThread(channel,NULL,buff);
 		IRCInterface_DeleteNickChannelThread(channel, user2);
 	}
@@ -154,17 +152,19 @@ void rQuit(char * comm){
 
 void rPrivMsg(char *comm){
 	char *prefix, *target, *msg, *nick, *host, *server, *user, *fnick;
-	trcv_file_data *tr_data;
-	taudio_data *taud_data;
+	trcv_file_data *tr_data=NULL;
+	taudio_data *taud_data=NULL;
 	pthread_t trcv;
 	prefix=target=msg=nick=host=server=user=fnick=NULL;
 	IRCParse_Privmsg(comm, &prefix, &target, &msg);
 	IRCParse_ComplexUser(prefix, &nick, &user, &host, &server);
 	/*Recepcion de ficheros*/
 	if(msg[0]==(char) 0x01){
+		syslog(LOG_INFO, "IRCCli: Mensaje especial: %s", msg+1);
 		//TODO Reservar memoria manualmente para quitar warnings de ISO C. De momento asi es mas facil y no da problemas.
 		tr_data=malloc(sizeof(trcv_file_data));
 		taud_data=malloc(sizeof(taudio_data));
+		/*Oferta recibida de envio de fichero*/
 		if(sscanf(msg, "\001FSEND %ms %ms %ms %li %li",
 				&fnick,
 				&(tr_data->fname),
@@ -186,17 +186,31 @@ void rPrivMsg(char *comm){
 			client_rejectfile(fnick);
 			}
 		
-	
+		/*Inicio de conversacion de chat*/
 		}else if(sscanf(msg,"\001AUDCHAT %ms %li",
 				&(taud_data->ip),
 				&(taud_data->port))>0){
 			free(tr_data);
-			//TODO
+			//TODO  start_aud();
+			client_setauddest(taud_data->ip, taud_data->port);
+			client_sendaudreply(nick); // no estoy seguro si es este nick
+			client_launchaudio();
+			//free(taud_data);
+			
+		
+		/*Oferta de envio de fichero rechazada*/
 		}else if(sscanf(msg, "\001REJECTED %li",&(tr_data->port))>0) {
-			client_stopsnd();
+			client_stopsnd(); 
 			free(tr_data);
 			free(taud_data);
-
+		/**/
+		}else if(sscanf(msg, "\001AUDREPLY %ms %li",
+				&(taud_data->ip),
+				&(taud_data->port))>0){
+			client_setauddest(taud_data->ip, taud_data->port);
+			client_launchaudio();
+			free(taud_data);
+			free(tr_data);
 		}else{
 			free(tr_data);
 			free(taud_data);
@@ -305,7 +319,32 @@ void rNick(char *comm){
 	IRCInterface_ChangeNickThread(nick2, msg);
 	IRC_MFree(8 ,&prefix, &nick, &msg, &nick2, &user, &host, &server, &mynick );
 }
-
+/**
+ * @brief Atiende al mensaje TOPIC
+ * @param [in] comm Comando recibido
+ */
+void rTopic(char *comm){
+	char *pre, *nick, *topic, *c;
+	char buff[512]={0};
+	pre=nick=topic=c=NULL;
+	IRCParse_Topic(comm, &pre, &c, &topic);
+	snprintf(buff,512,"The topic is %s.", topic);
+	IRCInterface_WriteChannelThread(c,nick,buff);
+	IRC_MFree(4, &nick, &pre, &c, &topic);
+}
+/**
+ * @brief Atiende al mensaje RplTopic
+ * @param [in] comm Comando recibido
+ */
+void rRplTopic(char *comm){
+	char *pre, *nick, *topic, *c;
+	char buff[512]={0};
+	pre=nick=topic=c=NULL;
+	IRCParse_RplTopic(comm,&pre,&nick,&c,&topic);
+	snprintf(buff,512,"The topic is %s.", topic);
+	IRCInterface_WriteChannelThread(c,nick,buff);
+	IRC_MFree(4, &nick, &pre, &c, &topic);
+}
 /**
  * @brief Atiende al mensaje RplList
  * @param [in] comm Comando recibido

@@ -44,27 +44,38 @@
  */
 #define AUD_BUFF 1000
 /** Variables globales*/
-/*Socket de la conexion*/
-int sockfd=-1;
-/*Variable que regula la recepcion de mensajes*/
-int stop=1;
-/*Keep alive, queremos que la conexion no se cierre*/
-int ka=0;
-/*Alive. True si se mando un mensaje en los ultimos 20 segundos*/
-bool alive =FALSE;
-/*Variable que determina si usamos ssl*/
-int ssl_global=0;
-/*Mutex para el control de envio por el socket*/
-pthread_mutex_t mutex_send;
 
-pthread_t tsend_file;
-int active_audio =0;
-int playing_audio=0;
+int sockfd=-1; /*Socket de la conexion*/
+int stop=1; /*Variable que regula la recepcion de mensajes*/
+int ka=0; /*Keep alive, queremos que la conexion no se cierre*/
+bool alive =FALSE; /*Alive. True si se mando un mensaje en los ultimos 20 segundos*/
+int ssl_global=0; /*Variable que determina si usamos ssl*/
+pthread_mutex_t mutex_send; /*Mutex para el control de envio por el socket*/
+pthread_t tsend_file; /*Variables para envio de ficheros*/
 
+
+/***** Variables para chat de audio*********/
+int active_audio =0; /*Determina si el chat esta activo*/
+int playing_audio=0; /*Determina si el chat esta reproduciendo*/
+
+int aud_sock=-1; /*Socket a traves del cual enviamos*/
+uint16_t destport=-1; /*Puerto al que enviamos*/
+char destip[16]={0}; /*Ip a la que enviamos*/
+
+void taudio_rcv(); /*Hilo de recepcion*/
+void taudio_send(); /*Hilo de envio*/
+
+pthread_mutex_t mutex_audsnd;
+pthread_mutex_t mutex_audrcv;
 /*Lista de comandos de usuario*/
 void (*ucommList[MAX_UCOMM])(char *comm );
 /*Lista de mensajes recividos por el usuario*/
 void (*rcommList[MAX_RCOMM])(char *comm);
+
+
+/*FUNCIONES PRIVADAS*/
+char * get_ip();
+char * get_nick();
 
 /**
  *MI_Ip
@@ -85,7 +96,7 @@ char mi_ip[16]="000.000.000.000";
  *Hace transparente el uso de ssl en el resto de la aplicacion
  *
  * @brief Envia un mensaje por el socket
- * @param comm Mensaje para enviar por el socket
+ * @param [in] comm Mensaje para enviar por el socket
  */
 void client_send(char *comm){
 	if(!comm) return;
@@ -101,6 +112,30 @@ void client_send(char *comm){
 	pthread_mutex_unlock(&mutex_send);
 	
 }
+
+/**
+ *Wrapper para funcion tcp_recv y ssl_recv
+ *Hace transparente el uso de ssl en el resto de la aplicacion
+ *
+ * @brief Recibe un mensaje por el socket
+ * @param [out] msg Mensaje recibido por el socket
+ * @param [in] max Tamanio maximo del buffer de recepcion
+ * @return Numero de bytes leidos. <0 en caso de error
+ */
+long client_rcv( char* msg, size_t max){
+	if(!msg || max < 1) return -1;
+	//if(ssl_global)
+	return tcp_recv(sockfd, msg, max);
+}
+/**
+ *Wrapper para funcion tcp_connect y ssl_connect
+ *Hace transparente el uso de ssl en el resto de la aplicacion
+ *
+ * @brief Se conecta a un socket
+ * @param [out] socket socket conectado
+ * @param [in] server servido al que conectarse
+ * @param [in] port puerto al qeu conectarse
+ */
 void client_connect(int* socket, char *server, int port){
 	long ret=0;
 	struct in_addr dummy;
@@ -110,8 +145,14 @@ void client_connect(int* socket, char *server, int port){
 		syslog(LOG_ERR,"IRCCli: Error en tcp_connect. Error: %ld",ret);
 	}
 }
-
-
+/**
+ *Desconecta el cliente del servidor
+ * Ojo! Solo del servidor, si tiene otras conexiones abiertas
+ * enviando un fichero con otro usuario por ejemplo, no las cierra
+ *
+ * @brief Cierra la conexion con el servidor
+ *
+ */
 void client_disconnect(){
 	stop=1;
 	ka=FALSE;
@@ -122,6 +163,13 @@ void client_disconnect(){
 	IRCInterface_ChangeConectionSelected();
 	IRCInterface_WriteSystem(NULL, "Disconnected()");
 }
+/**
+ * 
+ * @brief Envia un mensaje indicando que el ofrecimiento de fichero 
+ * ha sido rechazado
+ * @param [in] nick Nick al que se envia el mensaje, debe ser el que 
+ * envio la oferta de fichero
+ */
 void client_rejectfile(char *nick){
 	char buff[64]={0};
 	char *pmsg=NULL;
@@ -131,10 +179,73 @@ void client_rejectfile(char *nick){
 	free(pmsg);
 
 }
+/**
+ *
+ * @brief Cierra la conexion que se abrio para enviar el fichero,  
+ * esta funcion se llama cuando se recibe un rechazo de oferta
+ */
 void client_stopsnd(){
 	IRCInterface_ErrorDialogThread("El fichero fue rechazado.");
 	pthread_cancel(tsend_file);
+}
+/**
+ * Esta funcion fija las variables globales ipdest y portdest que son
+ * utilizadas por el chat de audio para mandar los paquetes udp al 
+ * destino apropiado
+ *
+ * @brief Fija la direccion y puerto del usuario al otro extremo de 
+ * la llamada
+ * @param [in] Direccion IP en formato x.x.x.x del destinatario
+ * @param [in] Puerto del destinatario
+ */
 
+void client_setauddest(char *ip, long port){
+	syslog(LOG_INFO,"IRCCli: Destino de llamada fijado");
+	destport=(uint16_t) port;
+	strncpy(destip,ip,16);
+}
+/**
+ * Esta funcion envia una respuesta al mensaje que inicia una llamada
+ * de voz. Ademas abre un puerto UDP y envia en la respuesta la 
+ * direccion y puertos de este socket.
+ * @brief Abre un puerto UDP y envia respuesta al mensaje de inicio 
+ * de chat de voz.
+ * @param [in] nick Nick del destinatario del mensaje, debe ser el 
+ * mismo que envio el mensaje de inicio de chat de voz
+ */
+void client_sendaudreply(char  *nick){
+	syslog(LOG_INFO,"IRCCli: Abriendo puerto udp y enviando respuesta...");
+	uint16_t port=0;
+	char buff[128]={0};
+	char *pmsg=NULL;
+	char *ip_cutre=NULL;
+	ip_cutre=get_ip();
+	udp_open(&aud_sock, &port);
+	snprintf(buff,128,"\001AUDREPLY %s %u",ip_cutre, port);
+	free(ip_cutre);
+	IRCMsg_Privmsg(&pmsg,NULL,nick,buff);
+	client_send(pmsg);
+	free(pmsg);
+}
+/**
+ * Esta funcion se llama al finalizar toda la transmision de 
+ * mensajes iniciales para el comienzo del chat de voz.
+ * Activa las banderas globales que ponen en marcha el audio y lanza
+ * los hilos de recepcion y envio
+ *
+ * @brief Inicia de forma efectiva el chat de voz. 
+ */
+void client_launchaudio(){
+	active_audio =1;
+	playing_audio=1;
+	pthread_t tsend_aud;
+	pthread_t trcv_aud;
+	pthread_create(&tsend_aud, NULL,
+		(void * (*)(void *)) taudio_send, NULL);
+	pthread_create(&trcv_aud, NULL,
+		(void * (*)(void *)) taudio_rcv, NULL);
+	pthread_detach(tsend_aud);
+	pthread_detach(trcv_aud);
 }
 /**
  * Funcion especifica que solo devuelve el nick utilizando la funcion
@@ -151,15 +262,9 @@ char * get_nick(){
 	return nick;
 
 }
-/**
- * Funcion que consigue la ip de la interfaz sobre la que esta abierto 
- * el socket
- * 
- * @brief Devuelve la ip del cliente
- * @return TODO
- */
+/*
 char * get_ip(){
-	FILE *f;
+	FILE *f=NULL;
 	char buff[256]={0};
 	char *aux =NULL, *ip=NULL;
 	ip=malloc(16*sizeof(char));	
@@ -167,12 +272,51 @@ char * get_ip(){
 		strncpy(ip,mi_ip,16);
 		return ip;
 	}
-	
+	fflush(NULL);
 	f=popen("hostname -I", "r");
+	if(!f){
+		strncpy(ip,mi_ip,16);
+		return ip;
+	}
 	fgets(buff, 64, f);
 	aux=strtok(buff," ");
 	strncpy(ip,aux,16);
 	pclose(f);
+	return ip;
+
+}*/
+/**
+ * Funcion que consigue la ip de la interfaz sobre la que esta 
+ * abierto el socket.
+ * En concreto, devuelve la interfaz PRIORITARIA, es decir, la 
+ * primera devuelta por hostname -I. 
+ * Este comportamiento puede modificarse de forma MANUAL cambiando
+ * la variable golobal mi_ip en este mismo fichero (xchat2.c). En tal
+ * caso esta funcion siempre devuelve mi_ip;
+ * 
+ * @brief Devuelve la ip del cliente (nuestra IP)
+ * @return Ip del cliente (nuestra IP)
+ */
+char * get_ip(){
+	FILE *f=NULL;
+	char buff[128]={0};
+	char *aux =NULL, *ip=NULL;
+	ip=malloc(16*sizeof(char));	
+	if(strcmp(mi_ip,"000.000.000.000")){
+		strncpy(ip,mi_ip,16);
+		return ip;
+	}
+	system("hostname -I > mi_ip_aux.txt");
+	f=fopen("mi_ip_aux.txt", "r"); //fuck popen
+	if(!f){
+		strncpy(ip,mi_ip,16);
+		return ip;
+	}
+	fgets(buff, 64, f);
+	aux=strtok(buff," ");
+	strncpy(ip,aux,16);
+	fclose(f);
+	remove("mi_ip_aux.txt");
 	return ip;
 
 }
@@ -210,8 +354,7 @@ void atiende_comandos(void){
 	comm=caux=NULL;
 	syslog(LOG_INFO, "IRCCli: Recibiendo mensajes");
 	while(!stop){
-		//TODO annadir wrapper de esta funcion con semaforos. Lo annadire posiblmente al implementar client_rcv para meter tambien ssl
-		len= tcp_recv(sockfd, buff, (size_t) 8192);
+		len= client_rcv( buff, (size_t) 8192);
 		switch(len){
 			case 0:  
 				syslog(LOG_INFO, "IRCCli:  Conexion cerrada por el servidor");
@@ -645,14 +788,14 @@ long IRCInterface_Connect(char *nick, char *user, char *realname, char *password
 	if(!nick || !user || !realname || port<0 || !server){
 		return IRCERR_NOCONNECT;
 	}
-	/*Variable para mantener activa la conexion*/
-	ka=2;
-	/*Hacer la variable ssl global*/
-	ssl_global=ssl;
-	/*Mutex para envio de mensajes*/
-	pthread_mutex_init(&mutex_send, NULL);
-		/*Desbloqueamos mutex de envio*/
-	pthread_mutex_unlock(&mutex_send);
+	ka=2; /*Variable para mantener activa la conexion*/
+	ssl_global=ssl;/*Hacer la variable ssl global*/
+	pthread_mutex_init(&mutex_send, NULL);	/*Mutex para envio de mensajes*/
+	pthread_mutex_unlock(&mutex_send);	/*Desbloqueamos mutex de envio*/
+	pthread_mutex_init(&mutex_audsnd, NULL);
+	pthread_mutex_init(&mutex_audrcv, NULL);
+	pthread_mutex_unlock(&mutex_audsnd);
+	pthread_mutex_unlock(&mutex_audrcv);
 	client_connect( &sockfd, server ,port);
 		syslog(LOG_INFO,
 		 "IRCCli: Conexion establecida correctamente");
@@ -1067,8 +1210,12 @@ boolean IRCInterface_DisconnectServer(char *server, int port)
  
 boolean IRCInterface_ExitAudioChat(char *nick)
 {
+	pthread_mutex_lock(&mutex_audrcv);
+	pthread_mutex_lock(&mutex_audsnd);
 	active_audio=0;
 	playing_audio=0;
+	pthread_mutex_unlock(&mutex_audsnd);
+	pthread_mutex_unlock(&mutex_audrcv);
 	return TRUE;
 }
 
@@ -1412,7 +1559,7 @@ boolean IRCInterface_SendFile(char *filename, char *nick, char *data, long unsig
 /**
  * @ingroup IRCInterfaceCallbacks
  *
- * @page IRCInterface_StartAudioChat IRCInterface_StartAudioChat
+ * @page IRCInterface_AudioChat IRCInterface_StartAudioChat
  *
  * @brief Llamada por el botón "Iniciar" del diálogo de chat de voz.
  *
@@ -1447,32 +1594,36 @@ boolean IRCInterface_SendFile(char *filename, char *nick, char *data, long unsig
  
 boolean IRCInterface_StartAudioChat(char *nick)
 {
-	int aud_sock=-1;
+	
 	char *pmsg=NULL, *ip_cutre=NULL;
 	char msg[512]={0};
+	uint16_t udp_port=0;
 	struct sockaddr_in addr;
 	socklen_t slen=sizeof(addr);
-	if(playing_audio==0){
+	/*En este caso ya esta abierto, solo hay que reanudar el audio pausado*/
+	if(playing_audio==0 && active_audio==1){
 		playing_audio=1;
 		syslog(LOG_INFO, "IRCCli: Audio reanudado");
 		return TRUE;
 	}
+	
 	/*Abrimos socket udp en puerto cualqueira*/
-	if (udp_open(&aud_sock, 0)==UDP_ERR) return FALSE;
+	if (udp_open(&aud_sock, &udp_port)==UDP_ERR) return FALSE;
 	/*sin bind*/
 	getsockname(aud_sock,(struct sockaddr*)&addr,&slen);
 	syslog(LOG_INFO, "IRCCli: Socket udp abierto en %d",
 		ntohs(addr.sin_port));
 	ip_cutre=get_ip();
+
 	/*Construir mensaje especial de envio de fichero*/
-	snprintf(msg, 512, "\001AUDCHAT %s %d \r\n",
-		ip_cutre,
-		ntohs(addr.sin_port));
+	snprintf(msg,512,"\001AUDCHAT %s %d\r\n",ip_cutre,ntohs(addr.sin_port));
 	IRCMsg_Privmsg(&pmsg, NULL, nick, msg);
 	client_send(pmsg);
 	free(pmsg);
-	active_audio=1;
-	playing_audio =1;
+
+
+	//active_audio=1;
+	//playing_audio =1;
 	return TRUE;
 }
 void taudio_send(){
@@ -1482,23 +1633,35 @@ void taudio_send(){
 	while(active_audio){
 		if(playing_audio){
 			IRCSound_RecordSound(buff,AUD_BUFF);
-			//udp_semd
+			udp_send(aud_sock,
+				destip,destport,buff,AUD_BUFF);
 		}
+		pthread_mutex_lock(&mutex_audsnd);
+		pthread_mutex_unlock(&mutex_audsnd);
 	}
 	IRCSound_CloseRecord();
+	shutdown(aud_sock,SHUT_WR);
+	pthread_exit(NULL);
 }
 
 void taudio_rcv(){
+	unsigned long len=0;
 	char buff[AUD_BUFF]={0};
 	IRCSound_PlayFormat(PA_SAMPLE_S16BE,2);
 	IRCSound_OpenPlay();
 	while(active_audio){
 		if(playing_audio){
+			udp_rcv(aud_sock,destip,destport,
+buff,AUD_BUFF, &len);
 			IRCSound_PlaySound(buff,AUD_BUFF);
-			//udp_rcv
+			
 		}
+		pthread_mutex_lock(&mutex_audrcv);
+		pthread_mutex_unlock(&mutex_audrcv);
 	}
 	IRCSound_ClosePlay();
+	shutdown(aud_sock,SHUT_RD);
+	pthread_exit(NULL);
 }
 
 /**
@@ -1538,7 +1701,11 @@ void taudio_rcv(){
  
 boolean IRCInterface_StopAudioChat(char *nick)
 {
+	pthread_mutex_lock(&mutex_audrcv);
+	pthread_mutex_lock(&mutex_audsnd);
 	playing_audio=0;
+	pthread_mutex_unlock(&mutex_audsnd);
+	pthread_mutex_unlock(&mutex_audrcv);
 	return TRUE;
 }
 
@@ -1655,6 +1822,8 @@ void init_rComList(){
 	rcommList[KICK]=rKick;
 	rcommList[QUIT]=rQuit;
 	rcommList[MODE]=rMode;
+	rcommList[TOPIC]=rTopic;
+	rcommList[RPL_TOPIC]=rRplTopic;
 	rcommList[RPL_WHOISCHANNELS]=rRplWhoIsChannels;
 	rcommList[RPL_WHOISOPERATOR]=rRplWhoIsOperator;
 	rcommList[RPL_WHOISSERVER]=rRplWhoIsServer;

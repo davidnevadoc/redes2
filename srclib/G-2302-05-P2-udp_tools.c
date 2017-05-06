@@ -2,7 +2,7 @@
   @file udp_tools.c
   @breif Utilidades para la conexion UDP
   @author David Nevado Catalan <david.nevadoc@estudiante.uam.es>
-  @author Maria Prieto Gil  <maria.prietogil@estudiante.uam.es>
+  @author Maria Prieto Gil
   @date 26/04/2017
   */
 
@@ -20,15 +20,16 @@
 /**
  * @brief Abre un socket UDP en un puerto
  * @param [out] psockfd Descriptor del socket que se conecta
- * @param [in] port Puerto al que conectar el socket
+ * @param [in/out] port puntero al puerto en el que se quiere abrir el socket, si es 0 se elige uno cualquiera y se devuelve el numero de puerto asignado
  * @return UDP_OK si se conecta con exito, UDP_ERR en otro caso
  */
 
-int udp_open(int *psockfd, uint16_t port){
+int udp_open(int *psockfd, uint16_t *port){
 	
 	struct sockaddr_in addr;
+	socklen_t slen=sizeof(addr);
 	bzero(&addr, sizeof(addr));
-	if(!psockfd || port<0){
+	if(!psockfd || !port || *port<0){
 		return UDP_ERR;
 	}
 	if((*psockfd=socket(AF_INET, SOCK_DGRAM, 0))==-1){
@@ -36,12 +37,14 @@ int udp_open(int *psockfd, uint16_t port){
 		return UDP_ERR;
 	}
 	addr.sin_family=AF_INET;
-	addr.sin_port= htons(port);
+	addr.sin_port= htons(*port);
 	
 	if(bind(*psockfd,(struct sockaddr*)&addr, sizeof(addr))==-1){
 		syslog(LOG_ERR, "UDP: Error en bind(): %d", errno);
 		return UDP_ERR;
 	}
+	getsockname(*psockfd,(struct sockaddr*)&addr,&slen);
+	*port=ntohs(addr.sin_port);
 	return UDP_OK;
 }
 /**

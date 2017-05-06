@@ -13,7 +13,7 @@
 #define UDP_OK 0
 #define UDP_ERR -1
 
-int udp_open(int *psockfd, uint16_t port);
+int udp_open(int *psockfd, uint16_t *port);
 int udp_rcv(int sockfd, char *ip, uint16_t port, void *data,
  unsigned long data_max, unsigned long *len);
 int udp_send(int sockfd, char* ip, uint16_t port, void* data,

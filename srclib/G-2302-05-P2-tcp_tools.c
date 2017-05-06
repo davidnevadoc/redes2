@@ -2,7 +2,7 @@
   @file tcp_tools.c
   @breif Utilidades para la conexion TCP
   @author David Nevado Catalan <david.nevadoc@estudiante.uam.es>
-  @author Maria Prieto Gil <maria.prietogil@estudiante.uam.es>
+  @author Maria Prieto Gil
   @date 26/04/2017
   */
 #include <string.h>
@@ -74,7 +74,7 @@ long tcp_listen(int n_cli, int *socklisten){
  *@brief Funcion que establece la conexion del cliente con el servidor
  *@param [in] server Servidor al que conectarse
  *@param [in] port Puerto al que conectarse
- *@param [out] Socket conectado
+ *@param [out] sock Socket conectado
  */
 
 long tcp_connect( int *sock, struct in_addr ip,int port,char *server){
