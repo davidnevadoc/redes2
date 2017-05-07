@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <getopt.h>
 #include "../includes/G-2302-05-P2-client_tools.h"
 #include "../includes/G-2302-05-P2-tcp_tools.h"
 #include "../includes/G-2302-05-P2-udp_tools.h"
@@ -45,8 +46,9 @@
  * <hr>
  */
 #define AUD_BUFF 1000
-/** Variables globales*/
 
+
+/** Variables globales generales*******************************/
 int sockfd=-1; /*Socket de la conexion*/
 int stop=1; /*Variable que regula la recepcion de mensajes*/
 int ka=0; /*Keep alive, queremos que la conexion no se cierre*/
@@ -56,23 +58,22 @@ pthread_mutex_t mutex_send; /*Mutex para el control de envio por el socket*/
 pthread_t tsend_file; /*Variables para envio de ficheros*/
 
 
-/***** Variables para chat de audio*********/
+
+/***** Variables para chat de audio****************************/
 int active_audio =0; /*Determina si el chat esta activo*/
 int playing_audio=0; /*Determina si el chat esta reproduciendo*/
-
 int aud_sock=-1; /*Socket a traves del cual enviamos*/
 uint16_t destport=-1; /*Puerto al que enviamos*/
 char destip[16]={0}; /*Ip a la que enviamos*/
-
 void taudio_rcv(); /*Hilo de recepcion*/
 void taudio_send(); /*Hilo de envio*/
-
 pthread_mutex_t mutex_audsnd;
 pthread_mutex_t mutex_audrcv;
-/*Lista de comandos de usuario*/
-void (*ucommList[MAX_UCOMM])(char *comm );
-/*Lista de mensajes recividos por el usuario*/
-void (*rcommList[MAX_RCOMM])(char *comm);
+
+
+
+void (*ucommList[MAX_UCOMM])(char *comm ); /*Lista de comandos de usuario*/
+void (*rcommList[MAX_RCOMM])(char *comm); /*Lista de mensajes recividos por el usuario*/
 
 
 /*FUNCIONES PRIVADAS*/
@@ -93,6 +94,10 @@ char * get_nick();
  * 	char mi_ip[16]=192.168.1.25
  **/
 char mi_ip[16]="000.000.000.000";
+
+
+
+/*****FUNCIONES DE LA LIBRERIA CLIENT ************************/
 /**
  *Wrapper para funcion tcp_send y ssl_send.
  *Hace transparente el uso de ssl en el resto de la aplicacion
@@ -280,6 +285,12 @@ void client_signalstopaud(char *nick){
 	client_send(pmsg);
 	free(pmsg);
 }
+
+
+/*******************************************************************/
+
+
+/******FUNCIONES PRIVADAS****************************/
 /**
  * Funcion especifica que solo devuelve el nick utilizando la funcion
  * IRCInterface_GetMyUserInfo.
@@ -353,6 +364,7 @@ char * get_ip(){
 	return ip;
 
 }
+/***********************************************************************/
 
 /**
  * Manda un ping cada 20 segundos si el usuario
@@ -373,6 +385,8 @@ void tkeep_alive(){
 	syslog(LOG_INFO,"IRCCli: Keep Alive thread exit");
 	pthread_exit(NULL);
 }
+
+
 /**
  * Funcion que espera y procesa comandos recibidos desde el servidor.
  * Esta funcion se ejecuta en un hilo separado de la interfaz.
@@ -1925,6 +1939,69 @@ int main (int argc, char *argv[])
 	/* interfaz gráfico.                                          */
 	init_uComList();
 	init_rComList();
+	/*Parseo de parametros*/
+	
+	int option_index=0;
+	int flag_port=0, flag_ssl=0;
+	uint16_t port=0;
+	char opt = 0;
+	char buff[512] ={0};
+	struct in_addr ip;;
+	static struct option options[] =
+	  {
+		{"port", required_argument, 0, '1'},
+		{"ssldata", required_argument,0, '2'},
+		{0,0,0,0}
+	  };
+	while ((opt = getopt_long_only(argc, argv,"1:2", options, &option_index )) != -1) {
+		switch (opt) {
+
+			case '1' :
+				flag_port = 1;
+				port=atoi(optarg);
+				syslog(LOG_INFO, "IRCCli: Puerto seleccionado manualmente: %u\n", port);
+				break;		
+			case '2':
+				flag_ssl =1;
+				strncpy(buff, optarg,512);
+				break;
+			case '?' : printf("Error. Ejecucion: %s (sin banderas) o bien %s --ssldata --port <puerto>\n",argv[0], argv[0]); exit(ERROR);
+				break;
+
+			default: printf("Error. Ejecucion: %s (sin banderas) o bien %s --ssldata --port <puerto>\n",argv[0], argv[0]); exit(ERROR);
+				break;
+		}
+	}
+	if(flag_port==0) port=6667;
+	if(flag_ssl==1){
+		port=6669;
+		syslog(LOG_INFO, "IRCCli: Puerto seleccionado manualmente: %u\n", port);
+		inicializar_nivel_SSL();
+		if(fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT, CA_CERT) == SSL_ERR){
+			fprintf(stderr, "Error fijando contexto\n");
+			exit(1);
+		}
+		/*Abro conexion TCP*/
+		if(tcp_connect(&sockfd, ip, port, "localhost") == -1){
+			fprintf(stderr, "Error abriendo conexion tcp\n");
+			exit(1);
+		}
+
+		if(conectar_canal_seguro_SSL(sockfd) == SSL_ERR){
+			fprintf(stderr, "Error canal no seguro\n");
+			exit(1);
+		}
+
+		if(evaluar_post_connectar_SSL(sockfd) == SSL_ERR) {
+		fprintf(stderr, "Error del certificador\n");
+		exit(1);
+    		}
+		enviar_datos_SSL(sockfd, buff);
+		printf("Mensaje %s enviado a localhost: %u\n", buff ,port);
+		cerrar_canal_SSL(sockfd);
+		return 0;
+	
+	}
 	IRCInterface_Run(argc, argv);
 
 	return 0;
