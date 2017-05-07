@@ -1940,7 +1940,8 @@ int main (int argc, char *argv[])
 	init_uComList();
 	init_rComList();
 	/*Parseo de parametros*/
-	
+	FILE *fentrada=NULL;
+	int ret=-1;
 	int option_index=0;
 	int flag_port=0, flag_ssl=0;
 	uint16_t port=0;
@@ -1950,9 +1951,10 @@ int main (int argc, char *argv[])
 	static struct option options[] =
 	  {
 		{"port", required_argument, 0, '1'},
-		{"ssldata", required_argument,0, '2'},
+		{"ssldata", optional_argument,0, '2'},
 		{0,0,0,0}
 	  };
+	for(ret=0;ret<argc;ret++) syslog(LOG_INFO,"Esto es lo que nos envian: %s", argv[ret]);
 	while ((opt = getopt_long_only(argc, argv,"1:2", options, &option_index )) != -1) {
 		switch (opt) {
 
@@ -1963,7 +1965,7 @@ int main (int argc, char *argv[])
 				break;		
 			case '2':
 				flag_ssl =1;
-				strncpy(buff, optarg,512);
+				if(optarg) strncpy(buff, optarg,512);
 				break;
 			case '?' : printf("Error. Ejecucion: %s (sin banderas) o bien %s --ssldata --port <puerto>\n",argv[0], argv[0]); exit(ERROR);
 				break;
@@ -1975,29 +1977,48 @@ int main (int argc, char *argv[])
 	if(flag_port==0) port=6667;
 	if(flag_ssl==1){
 		port=6669;
-		syslog(LOG_INFO, "IRCCli: Puerto seleccionado manualmente: %u\n", port);
+		syslog(LOG_INFO, "IRCCli: Puerto seleccionado manualmente: %u", port);
 		inicializar_nivel_SSL();
+		syslog(LOG_INFO, "IRCCli: Nivel SSL inicializado correctamente");
 		if(fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT, CA_CERT) == SSL_ERR){
-			fprintf(stderr, "Error fijando contexto\n");
-			exit(1);
+			syslog(LOG_ERR, "IRCCli: Error fijando contexto");
+			return 1;
 		}
 		/*Abro conexion TCP*/
 		if(tcp_connect(&sockfd, ip, port, "localhost") == -1){
-			fprintf(stderr, "Error abriendo conexion tcp\n");
-			exit(1);
+			syslog(LOG_ERR, "IRCCli: Error abriendo conexion tcp");
+			return 1;
 		}
 
 		if(conectar_canal_seguro_SSL(sockfd) == SSL_ERR){
-			fprintf(stderr, "Error canal no seguro\n");
-			exit(1);
+			syslog(LOG_ERR, "IRCCli: Error canal no seguro");
+			return 1;
 		}
-
+	
 		if(evaluar_post_connectar_SSL(sockfd) == SSL_ERR) {
-		fprintf(stderr, "Error del certificador\n");
-		exit(1);
+			syslog(LOG_ERR, "IRCCli: Error del certificador\n");
+			return 1;
+		syslog(LOG_INFO, "IRCCli: Conexion establecida: Enviando cadena...");
     		}
-		enviar_datos_SSL(sockfd, buff);
-		printf("Mensaje %s enviado a localhost: %u\n", buff ,port);
+
+		if(strlen(buff)==0){
+			
+			if(!(fentrada=fopen("entrada.txt", "r"))) return 1;
+			fgets(buff,512,fentrada);
+			//fgets(buff+strlen(buff), 512-strlen(buff),fentrada);
+			fclose(fentrada);
+			//strcpy(buff,"NICK yoda\r\n");
+			syslog(LOG_INFO, "IRCCli: No se paso un argumento para ssldata. Se cogera de entrada.txt: %s", buff);
+		}
+		ret=enviar_datos_SSL(sockfd, buff);
+		if(ret<1){
+			syslog(LOG_ERR, "IRCCli: No se pudo enviar el mensaje %d", ret);
+			return 1;
+		}
+		syslog(LOG_INFO, "Mensaje %s enviado a localhost: %u\n", buff ,port);
+		recibir_datos_SSL(sockfd, buff);
+		printf("%s",buff);
+		//sleep(2);
 		cerrar_canal_SSL(sockfd);
 		return 0;
 	
