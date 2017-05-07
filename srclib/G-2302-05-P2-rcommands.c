@@ -131,6 +131,11 @@ void rKick(char * comm){
 	IRC_MFree(10, &prefix, &channel, &user, &farewell, &nick, &user, &host, &server, &server, &mynick);
 
 }
+/**
+ * @brief Atiende al comando Quit
+ * @param [in] comm Comando recibido
+ */
+
 void rQuit(char * comm){
 	char buff[512]={0};
 	char * pre, *msg, *nick,*user,*host,*serv,*channel;
@@ -235,9 +240,10 @@ void rPrivMsg(char *comm){
 
 }
 /**
- *TODO completar documentacion
- *@brief Funcion del hilo que se encarga de la recepcion del mensaje
  *
+ *@brief Funcion del hilo que se encarga de la recepcion del fichero
+ *@param [in] Estructura con la informacion necesaria para el hilo de 
+ * recepcion de mensajes
  */
 void trcv_file (trcv_file_data * d){
 	FILE *fout=NULL;
@@ -346,7 +352,8 @@ void rRplTopic(char *comm){
 	pre=nick=topic=c=NULL;
 	IRCParse_RplTopic(comm,&pre,&nick,&c,&topic);
 	snprintf(buff,512,"The topic is %s.", topic);
-	IRCInterface_WriteChannelThread(c,nick,buff);
+	IRCInterface_WriteChannelThread(c,info,buff);
+	IRCInterface_SetTopicThread(topic);
 	IRC_MFree(4, &nick, &pre, &c, &topic);
 }
 /**
@@ -689,6 +696,19 @@ void rErrNoSuchChannel(char *comm){
 	IRCInterface_WriteSystemThread(info, buff);
 	client_send(msg);
 	IRC_MFree(5,&pre,&nick,&nickn,&text,&msg);
+}
+/**
+ * @brief Atiende al mensaje ErrNoPrivileges
+ * @param [in] comm Comando recibido
+ */
+void rErrNoPrivileges(char *comm){
+	char *pre, *nick, *c, *msg;
+	pre=nick=c=msg=NULL;
+	c=IRCInterface_ActiveChannelName();
+	IRCParse_ErrNoPrivileges(comm,&pre,&nick,&msg);
+	IRCInterface_WriteChannelThread(c,c, "Your privileges are too low" );
+	IRC_MFree(3,&pre,&nick,&msg);
+
 }
 /**
  * @brief Atiende a cualquier mensaje de error de conexion

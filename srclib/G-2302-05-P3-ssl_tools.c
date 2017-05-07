@@ -116,7 +116,7 @@ int enviar_datos_SSL(int socket, void* buf){
 *@brief Función que recibe datos a través del canal seguro.
 *@param socket: socket asociado a la conexión
 *@param buff: buffer rellenado con los datos que se reciben
-*@return SSL_OK, SSL_ERR
+*@return >0 nuemero de bytes leidos,<0 error o SSL_ERR
 */
 int recibir_datos_SSL(int socket, void* buf){
 	if(!buf) return SSL_ERR;

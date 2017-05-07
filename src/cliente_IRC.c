@@ -14,8 +14,10 @@
 #include "../includes/G-2302-05-P2-client_tools.h"
 #include "../includes/G-2302-05-P2-tcp_tools.h"
 #include "../includes/G-2302-05-P2-udp_tools.h"
+#include "../includes/G-2302-05-P3-ssl_tools.h"
 #include "../includes/G-2302-05-P2-ucommands.h"
 #include "../includes/G-2302-05-P2-rcommands.h"
+
 /*
 #ifndef ifr_newname
 #define ifr_newname     ifr_ifru.ifru_slave
@@ -99,14 +101,22 @@ char mi_ip[16]="000.000.000.000";
  * @param [in] comm Mensaje para enviar por el socket
  */
 void client_send(char *comm){
-	if(!comm) return;
-	/*if(ssl_global) Enviar con ssl*/
 	/*Desbloqueamos mutex de envio*/
 	pthread_mutex_lock(&mutex_send);
-	if( tcp_send(sockfd, comm)<0){
-		syslog(LOG_ERR, "IRCCli: Error en tcp_send. Mensaje: %s", comm);
+	if(!comm) return;
+	if(ssl_global){
+		if(enviar_datos_SSL(sockfd, comm)==SSL_ERR){
+			syslog(LOG_ERR, "IRCCli: Error en SSL_send. Mensaje: %s", comm);
+		} else {
+			alive=TRUE;
+		}
 	} else {
-		alive=TRUE;
+	
+		if( tcp_send(sockfd, comm)<0){
+			syslog(LOG_ERR, "IRCCli: Error en tcp_send. Mensaje: %s", comm);
+		} else {
+			alive=TRUE;
+		}
 	}
 	/*Desbloqueamos mutex de envio*/
 	pthread_mutex_unlock(&mutex_send);
@@ -124,7 +134,7 @@ void client_send(char *comm){
  */
 long client_rcv( char* msg, size_t max){
 	if(!msg || max < 1) return -1;
-	//if(ssl_global)
+	if(ssl_global) return recibir_datos_SSL(sockfd,msg);
 	return tcp_recv(sockfd, msg, max);
 }
 /**
@@ -140,9 +150,20 @@ void client_connect(int* socket, char *server, int port){
 	long ret=0;
 	struct in_addr dummy;
 	bzero(&dummy, sizeof(dummy));
-	/*if(ssl_global) Concectar con ssl*/
-	if((ret=tcp_connect( socket,dummy, port, server))<0){
-		syslog(LOG_ERR,"IRCCli: Error en tcp_connect. Error: %ld",ret);
+	if(ssl_global){
+		inicializar_nivel_SSL();
+		if(fijar_contexto_SSL(SERVER_KEY, SERVER_CERT, CA_CERT) == SSL_ERR){
+			syslog(LOG_ERR, "IRCCli:Error fijando contexto");
+		}
+		if((ret=tcp_connect( socket,dummy, port, server))<0){
+			syslog(LOG_ERR,"IRCCli: Error en tcp_connect. Error: %ld",ret);
+		}		
+		conectar_canal_seguro_SSL(sockfd);
+
+	}else{
+		if((ret=tcp_connect( socket,dummy, port, server))<0){
+			syslog(LOG_ERR,"IRCCli: Error en tcp_connect. Error: %ld",ret);
+		}		
 	}
 }
 /**
@@ -157,7 +178,11 @@ void client_disconnect(){
 	stop=1;
 	ka=FALSE;
 	syslog(LOG_INFO,"IRCCli: Cliente desconectado");
-	close(sockfd);
+	if(ssl_global) cerrar_canal_SSL(sockfd);
+	else{
+		shutdown(sockfd, SHUT_RDWR);
+		close(sockfd);
+	}
 	pthread_mutex_destroy(&mutex_send);
 	IRCInterface_RemoveAllChannels();
 	IRCInterface_ChangeConectionSelected();
@@ -804,6 +829,7 @@ long IRCInterface_Connect(char *nick, char *user, char *realname, char *password
 	pthread_mutex_init(&mutex_audrcv, NULL);
 	pthread_mutex_unlock(&mutex_audsnd);
 	pthread_mutex_unlock(&mutex_audrcv);
+
 	client_connect( &sockfd, server ,port);
 		syslog(LOG_INFO,
 		 "IRCCli: Conexion establecida correctamente");
@@ -813,6 +839,8 @@ long IRCInterface_Connect(char *nick, char *user, char *realname, char *password
 	pthread_create(&rthread, NULL,
 		(void * (*)(void *)) atiende_comandos, NULL);
 	pthread_detach(rthread);
+
+
 	/*Registro en el servidor irc*/
 	if(password && strlen(password) > 0){
 		IRCMsg_Pass(&comm,NULL ,password);
@@ -1176,8 +1204,8 @@ void IRCInterface_DeactivateSecret(char *channel)
  
 boolean IRCInterface_DisconnectServer(char *server, int port)
 {
-	//TODO
-	client_disconnect();
+	ucommList[QUIT]("/quit");
+	//client_disconnect();
 	return TRUE;
 }
 
@@ -1556,7 +1584,6 @@ boolean IRCInterface_SendFile(char *filename, char *nick, char *data, long unsig
 	snprintf(msg, 512, "\001FSEND %s %s %s %d %lu\r\n",
  		get_nick(),filename,
 		ip_cutre,
- 		//inet_ntoa(my_addr.sin_addr),
 		ntohs(my_addr.sin_port), length );
 	free(ip_cutre);
 	IRCMsg_Privmsg(&pmsg, NULL, nick, msg);
@@ -1634,6 +1661,9 @@ boolean IRCInterface_StartAudioChat(char *nick)
 
 	return TRUE;
 }
+/**
+ *@brief Funcion llamada por el hilo de envio de audio
+ */
 void taudio_send(){
 	char buff[AUD_BUFF]={0};
 	IRCSound_RecordFormat(PA_SAMPLE_S16BE,2);
@@ -1651,7 +1681,9 @@ void taudio_send(){
 	shutdown(aud_sock,SHUT_WR);
 	pthread_exit(NULL);
 }
-
+/**
+ *@brief Funcion llamada por el hilo de recepcion de audio
+ */
 void taudio_rcv(){
 	unsigned long len=0;
 	char buff[AUD_BUFF]={0};
@@ -1795,7 +1827,9 @@ void IRCInterface_TakeVoice(char *channel, char *nick)
 	IRCMsg_Mode(&msg, NULL, channel, "-v", nick);
 	free(msg);
 }
-
+/**
+ *@brief Inicializa la lista de punteros a funciones de comandos de usuario
+ */
 void init_uComList(){
 	int i=0;
 	for(i=0; i<MAX_UCOMM; i++){
@@ -1817,7 +1851,9 @@ void init_uComList(){
 	ucommList[UQUIT]=uQuit;
 	ucommList[UMSG]=uPrivmsg;
 }
-
+/**
+ *@brief Inicializa la lista de punteros a funciones de respuesta
+ */
 void init_rComList(){
 	int i=0;
 	for(i=0; i<MAX_RCOMM; i++){
@@ -1847,7 +1883,9 @@ void init_rComList(){
 	rcommList[RPL_NOWAWAY]=rRplNowAway;
 	rcommList[RPL_CHANNELMODEIS]=rRplChannelModeIs;
 	rcommList[PING]=rPing;
+
 	/*Errores*/
+	rcommList[ERR_CHANOPRIVSNEEDED]=rErrNoPrivileges;
 	rcommList[ERR_NOSUCHNICK]=rErrNoSuchNick;
 	rcommList[ERR_NOSUCHCHANNEL]=rErrNoSuchChannel;
 	rcommList[ERR_NICKCOLLISION]=rErrDefault;

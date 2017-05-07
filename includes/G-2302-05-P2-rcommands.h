@@ -37,6 +37,7 @@ void rRplChannelModeIs(char * comm);
 void rPing(char *comm);
 void rErrNoSuchNick(char *comm);
 void rErrNoSuchChannel(char *comm);
+void rErrNoPrivileges(char *comm);
 void rErrDefault(char * comm);
 
 #endif
