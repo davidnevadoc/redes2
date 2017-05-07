@@ -1902,6 +1902,7 @@ void init_rComList(){
 	rcommList[ERR_CHANOPRIVSNEEDED]=rErrNoPrivileges;
 	rcommList[ERR_NOSUCHNICK]=rErrNoSuchNick;
 	rcommList[ERR_NOSUCHCHANNEL]=rErrNoSuchChannel;
+	rcommList[ERR_CANNOTSENDTOCHAN]=rErrCanNotSendToChan;
 	rcommList[ERR_NICKCOLLISION]=rErrDefault;
 	//rcommList[ERR_ERRONEOUSNICKNAME]=rErrDefault;
 	//rcommList[ERR_ALREADYREGISTERED]=rErrDefault;

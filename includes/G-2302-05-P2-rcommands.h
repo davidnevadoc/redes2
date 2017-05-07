@@ -38,6 +38,7 @@ void rPing(char *comm);
 void rErrNoSuchNick(char *comm);
 void rErrNoSuchChannel(char *comm);
 void rErrNoPrivileges(char *comm);
+void rErrCanNotSendToChan(char *comm);
 void rErrDefault(char * comm);
 
 #endif

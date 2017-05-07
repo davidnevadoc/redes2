@@ -719,7 +719,18 @@ void rErrDefault(char * comm){
 	snprintf(buff,512,"Error connecting with server : %s.", comm);
 	IRCInterface_ErrorDialogThread(buff);
 }
+/**
+ * @brief Atiende al mensaje ErrCanNotSendToChan
+ * @param [in] comm Comando recibido
+ */
+void rErrCanNotSendToChan(char *comm){
+	char *pre, *nick, *c, *msg;
+	pre=nick=c=msg=NULL;
+	IRCParse_ErrCanNotSendToChan(comm, &pre,&nick,&c,&msg);
+	IRCInterface_WriteChannelThread(c,c,msg?msg:"Cannot send to channel");
+	IRC_MFree(4, &pre,&nick,&c,&msg);
 
+}
 /**
  *Funcion privada.
  * Wrapper de IRCInterface_GetMyUserInfoThread. 
