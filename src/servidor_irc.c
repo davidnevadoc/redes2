@@ -91,8 +91,8 @@ int main(int argc, char *argv[]){
 			syslog(LOG_ERR,"IRCServ: Error en accept(): %d",
 			 errno);
 		}
-		
-		Atiende_cliente(cli, connfd);
+		/*seleccionamos no ssl*/
+		Atiende_cliente(cli, connfd, 0);
 	}/*
 	n = getdtablesize();
 	for(i=0;i<n;i++){

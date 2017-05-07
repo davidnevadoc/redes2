@@ -34,7 +34,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJ = servidor_IRC.o  servidor_echo.o cliente_echo.o cliente_IRC.o servidor_irc.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_BIN =  servidor_IRC  cliente_IRC cliente_echo servidor_echo cliente_IRC servidor_irc
+_BIN =  servidor_IRC  cliente_IRC cliente_echo servidor_echo servidor_irc
 BIN = $(patsubst %,$(BDIR)/%,$(_BIN))
 
 

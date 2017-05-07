@@ -10,7 +10,7 @@
 #include "../includes/G-2302-05-P1-atiendecliente.h"
 /*Lista con los comandos disponibles,*/ 
 int (*listaComandos[NUM_COMANDOS])(data *);
-
+int select_ssl = 0; /*1 ssl, 0 no*/
 /**
 *@brief Función que inicializa el array de funciones con 
 *		los comandos disponibles
@@ -113,13 +113,15 @@ void * atiende_cliente(data* d){
 *@return Devuelve SUCCESS si todo va bien, ERROR en caso contrario
 *
 */
-int Atiende_cliente(struct sockaddr cli, int connfd){
+int Atiende_cliente(struct sockaddr cli, int connfd, int s_ssl){
 	/*Estructura para el paso de parametros al hilo atiende_cliente*/
 	data *data_aux = NULL;
 	/*Identificador del hilo*/
 	pthread_t * taux= NULL;
 	/*Tamanio en bytes de la direccion del cliente*/
 	int addrsize=0;
+	/*Indicamos si se implementa ssl o no*/
+	select_ssl = s_ssl;
 	/*Lanzamos hilo que atiende al cliente*/
 	if(cli.sa_family!=AF_INET && cli.sa_family!=AF_INET6){
 		syslog(LOG_ERR, "IRCServ: Address family not supported");

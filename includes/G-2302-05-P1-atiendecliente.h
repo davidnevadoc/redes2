@@ -33,7 +33,7 @@
 * estructura que se pasa a la funcion atiende_cliente, asi como de gestionar 
 * los hilos y hacer diversos controles de error.
 */
-int Atiende_cliente(struct sockaddr cli, int connfd);
+int Atiende_cliente(struct sockaddr cli, int connfd, int s_ssl);
 
 
 #endif
