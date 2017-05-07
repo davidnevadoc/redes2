@@ -41,7 +41,7 @@ void inicializar_nivel_SSL();
 *@param pkey: clave privada
 *@param cert: path del certificado
 *@param ca_cert: path del certificado de la CA
-*@return estructura SSL_CTX
+*@return SSL_OK, SSL_ERR
 */
 int fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert);
 
@@ -49,7 +49,6 @@ int fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert);
 *@brief Función que dado un contexto SSL y un descriptor de socket se *encarga de obtener un canal seguro SSL iniciando el proceso de 
 *handshake con el otro extremo.
 *@param socket: socket asociado a la conexión
-*@param context: contexto SSL
 *@return SSL_OK, SSL_ERR
 */
 int conectar_canal_seguro_SSL(int socket);
@@ -58,7 +57,6 @@ int conectar_canal_seguro_SSL(int socket);
 *@brief Función que dado un contexto SSL y un descriptor de socket  se *encarga de bloquear la aplicación, que se quedará esperando hasta 
 *recibir un handshake por parte del cliente.
 *@param socket: socket asociado a la conexión
-*@param context: contexto SSL
 *@return SSL_OK, SSL_ERR
 */
 int aceptar_canal_seguro_SSL(int socket);
@@ -91,7 +89,6 @@ int recibir_datos_SSL(int socket, void* buf);
 /**
 *@brief Función que libera todos los recursos y cierra el canal de *comunicación seguro creado previamente.
 *@param socket: socket asociado a la conexión
-*@param context: contexto SSL
 */
 void cerrar_canal_SSL(int socket);
 
