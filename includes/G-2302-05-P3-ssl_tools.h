@@ -38,42 +38,62 @@ void inicializar_nivel_SSL();
 *será utilizado para la creación de canales seguros mediante SSL. 
 *Deberá recibir información sobre las rutas a los certificados y claves con 
 *los que vaya a trabajar la aplicación.
+*@param pkey: clave privada
+*@param cert: path del certificado
+*@param ca_cert: path del certificado de la CA
+*@return estructura SSL_CTX
 */
-SSL_CTX* fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert);
+int fijar_contexto_SSL(char* pkey, char* cert, char* ca_cert);
 
 /**
 *@brief Función que dado un contexto SSL y un descriptor de socket se *encarga de obtener un canal seguro SSL iniciando el proceso de 
 *handshake con el otro extremo.
+*@param socket: socket asociado a la conexión
+*@param context: contexto SSL
+*@return SSL_OK, SSL_ERR
 */
-SSL* conectar_canal_seguro_SSL(int socket, SSL_CTX *context);
+int conectar_canal_seguro_SSL(int socket);
 
 /**
 *@brief Función que dado un contexto SSL y un descriptor de socket  se *encarga de bloquear la aplicación, que se quedará esperando hasta 
 *recibir un handshake por parte del cliente.
+*@param socket: socket asociado a la conexión
+*@param context: contexto SSL
+*@return SSL_OK, SSL_ERR
 */
-SSL* aceptar_canal_seguro_SSL(int socket, SSL_CTX *context);
+int aceptar_canal_seguro_SSL(int socket);
 
 /**
 *@brief Función que comprueba una vez realizado el handshake que el 
 *canal de comunicación se puede considerar seguro.
+*@param socket: socket asociado a la conexión
+*@return SSL_OK, SSL_ERR
 */
-int evaluar_post_connectar_SSL(int socket, SSL *ssl);
+int evaluar_post_connectar_SSL(int socket);
 
 
 /**
 *@brief Función que envía datos a través del canal seguro.
+*@param socket: socket asociado a la conexión
+*@param buf: buffer que se quiere enviar
+*@return SSL_OK, SSL_ERR
 */
-int enviar_datos_SSL(int socket, void* buf, SSL *ssl);
+int enviar_datos_SSL(int socket, void* buf);
 
 /**
 *@brief Función que recibe datos a través del canal seguro.
+*@param socket: socket asociado a la conexión
+*@param buff: buffer rellenado con los datos que se reciben
+*@return SSL_OK, SSL_ERR
 */
-int recibir_datos_SSL(int socket, void* buf, SSL *ssl);
+int recibir_datos_SSL(int socket, void* buf);
 
 /**
 *@brief Función que libera todos los recursos y cierra el canal de *comunicación seguro creado previamente.
+*@param socket: socket asociado a la conexión
+*@param context: contexto SSL
 */
-void cerrar_canal_SSL(int socket, SSL *ssl, SSL_CTX *context);
+void cerrar_canal_SSL(int socket);
 
 
 #endif

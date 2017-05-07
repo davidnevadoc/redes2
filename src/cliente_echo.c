@@ -18,10 +18,8 @@
 */
 int main(int argc, char** argv) {
 	int socket;
-	int port = 6506;
+	int port = 6111;
 	char buf[MAX_MSG_SSL];
-	SSL_CTX *context;
-	SSL *ssl;
 	struct in_addr ip;
 
 	if(argc == 2){
@@ -30,19 +28,23 @@ int main(int argc, char** argv) {
 
     inicializar_nivel_SSL();
 
-	context = fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT, CA_CERT);
-
+	
+	if(fijar_contexto_SSL(CLIENT_KEY , CLIENT_CERT, CA_CERT) == SSL_ERR){
+		fprintf(stderr, "Error fijando contexto\n");
+		exit(1);
+	}
 	/*Abro conexion TCP*/
-	tcp_connect(&socket, ip, port, "localhost");
+	if(tcp_connect(&socket, ip, port, "localhost") == -1){
+		fprintf(stderr, "Error abriendo conexion tcp\n");
+		exit(1);
+	}
 
-
-	ssl = conectar_canal_seguro_SSL(socket, context);
-	if(!ssl){
+	if(conectar_canal_seguro_SSL(socket) == SSL_ERR){
 		fprintf(stderr, "Error canal no seguro\n");
 		exit(1);
 	}
 
-	if(evaluar_post_connectar_SSL(socket, ssl)) {
+	if(evaluar_post_connectar_SSL(socket) == SSL_ERR) {
         fprintf(stderr, "Error del certificador\n");
         exit(1);
     }
@@ -50,15 +52,15 @@ int main(int argc, char** argv) {
 	while(1){
 		fflush(stdin);
 		fscanf(stdin, "%s", buf);
-		enviar_datos_SSL(socket, buf, ssl);
+		enviar_datos_SSL(socket, buf);
 		/*si el mensaje es exit salgo*/
 		if(!strcmp(buf, "exit")) break;
         memset(buf, 0, MAX_MSG_SSL);
-		recibir_datos_SSL(socket, buf, ssl);
+		recibir_datos_SSL(socket, buf);
         fprintf(stdout, "%s\n", buf);
 	}
 
-	cerrar_canal_SSL(socket, ssl, context);
+	cerrar_canal_SSL(socket);
 	
 	return 0;
 }
